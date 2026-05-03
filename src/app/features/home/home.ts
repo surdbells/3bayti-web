@@ -1,14 +1,15 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
-import { Meta, Title } from '@angular/platform-browser';
+import { SeoService } from '../../core/seo/seo.service';
+import { organizationSchema, websiteSchema } from '../../core/seo/schema.helpers';
 
 /**
  * Home page — the canonical "/" route.
  *
- * Phase 1 mission: be a real, server-rendered, indexable page. Sets a
- * title, meta description, OG/Twitter tags, and (in a future commit)
- * an Organization JSON-LD. The visible content is a hero + brief
- * "coming soon" message — enough to confirm SSR works end-to-end
- * without being an empty stub when shared on social.
+ * Mission: be a real, server-rendered, indexable page. Sets full SEO
+ * meta + injects the site-level Organization and WebSite JSON-LD
+ * blocks (these establish the brand identity for search engines and
+ * enable Google's sitelinks search box once the search route is built
+ * in Phase 2).
  */
 @Component({
   selector: 'app-home',
@@ -18,28 +19,39 @@ import { Meta, Title } from '@angular/platform-browser';
   styleUrl: './home.scss',
 })
 export class HomeComponent {
-  private title = inject(Title);
-  private meta = inject(Meta);
+  private seo = inject(SeoService);
 
   constructor() {
-    /* Title + description set in the constructor so they appear in the
-       SSR'd HTML. The Meta service is SSR-safe and Angular Universal
-       picks these up for the response sent to crawlers. */
-    this.title.setTitle('3bayti — Premium Abayas, Kaftans & Modest Wear');
-    const description = 'Discover handcrafted abayas, kaftans, and modest wear from independent designers across the UAE. Curated styles, made-to-measure fits, delivered to your door.';
+    /* Per-page SEO. Idempotent — calling set() updates in place. */
+    this.seo.set({
+      title: 'Premium Abayas, Kaftans & Modest Wear',
+      description:
+        'Discover handcrafted abayas, kaftans, and modest wear from independent ' +
+        'designers across the UAE. Curated styles, made-to-measure fits, delivered ' +
+        'to your door.',
+      url: 'https://web.3bayti.ae/',
+      type: 'website',
+      titleSuffix: false,  // home title doesn't need " | 3bayti" appended
+    });
 
-    this.meta.updateTag({ name: 'description', content: description });
-    this.meta.updateTag({ name: 'theme-color', content: '#5a3a2c' });
-
-    /* Open Graph */
-    this.meta.updateTag({ property: 'og:title', content: '3bayti — Premium Abayas, Kaftans & Modest Wear' });
-    this.meta.updateTag({ property: 'og:description', content: description });
-    this.meta.updateTag({ property: 'og:type', content: 'website' });
-    this.meta.updateTag({ property: 'og:locale', content: 'en_AE' });
-
-    /* Twitter Cards */
-    this.meta.updateTag({ name: 'twitter:card', content: 'summary_large_image' });
-    this.meta.updateTag({ name: 'twitter:title', content: '3bayti — Premium Abayas, Kaftans & Modest Wear' });
-    this.meta.updateTag({ name: 'twitter:description', content: description });
+    /* Organization + WebSite schema — injected once on the home page so
+       search engines associate the brand identity with the root URL.
+       The search box action will start working once /search ships in
+       Phase 2. */
+    this.seo.setStructuredData([
+      organizationSchema({
+        name: '3bayti',
+        url: 'https://web.3bayti.ae/',
+        logo: 'https://web.3bayti.ae/logo-1200.png',
+        sameAs: [
+          // Add social profile URLs here as they're created
+        ],
+      }),
+      websiteSchema({
+        name: '3bayti',
+        url: 'https://web.3bayti.ae/',
+        searchUrlTemplate: 'https://web.3bayti.ae/search?q={search_term_string}',
+      }),
+    ]);
   }
 }
