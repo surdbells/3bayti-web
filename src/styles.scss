@@ -1,0 +1,59 @@
+/* ============================================================================
+   3bayti web — Global styles
+   -----------------------------------------------------------------------------
+   Tailwind 4 is loaded via PostCSS. The @use directive below brings in
+   Tailwind's preflight + utility classes. Per-component styles live in
+   each component's .scss file.
+   ============================================================================ */
+
+@use "tailwindcss";
+
+/* Custom properties (semantic tokens) — light theme. Mirrors the mobile
+   app's brand palette so users moving between mobile and web feel a
+   consistent identity. */
+:root {
+  /* Brand */
+  --color-brand-50:  #f9f4ea;
+  --color-brand-100: #efe2cf;
+  --color-brand-200: #e4d0b1;
+  --color-brand-300: #d6b988;
+  --color-brand-400: #c69d63;
+  --color-brand-500: #b18f1f;  /* primary gold */
+  --color-brand-600: #8c6f0f;
+  --color-brand-700: #5a3a2c;  /* deep espresso for headings */
+
+  /* Neutrals */
+  --color-bg-canvas:  #faf8f5;
+  --color-bg-surface: #ffffff;
+  --color-bg-muted:   #f4f0ea;
+
+  --color-text-primary:   #2e241c;
+  --color-text-secondary: #5a4a3c;
+  --color-text-tertiary:  #8a7868;
+  --color-text-inverse:   #ffffff;
+
+  --color-border-subtle:  rgba(46, 36, 28, 0.08);
+  --color-border-default: rgba(46, 36, 28, 0.16);
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont,
+               'Segoe UI', Roboto, sans-serif;
+  color: var(--color-text-primary);
+  background: var(--color-bg-canvas);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display type — for marketing headlines. Maps to Playfair Display per
+   the mobile app's editorial-luxury aesthetic. Loaded via Google Fonts
+   link in src/index.html. */
+h1, h2, h3, .font-display {
+  font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  letter-spacing: -0.01em;
+}

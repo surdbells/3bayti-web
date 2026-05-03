@@ -1,0 +1,106 @@
+/* Home page — Phase 1 hero + value props.
+   Fully responsive, SSR-friendly (no JS-dependent layout). */
+
+.home-page {
+  display: block;
+}
+
+/* ----- Hero --------------------------------------------------------------- */
+
+.hero {
+  min-height: 60vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 80px 24px;
+  /* Subtle warm gradient that evokes the brand's beige + gold palette.
+     Replaced in Phase 2 with editorial photography. */
+  background:
+    radial-gradient(ellipse at top, rgba(177, 143, 31, 0.08), transparent 60%),
+    linear-gradient(180deg, var(--color-bg-canvas) 0%, var(--color-brand-50) 100%);
+}
+
+.hero-inner {
+  max-width: 720px;
+  text-align: center;
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--color-brand-500);
+  margin: 0 0 16px;
+}
+
+.hero-title {
+  font-size: clamp(32px, 5vw, 56px);
+  line-height: 1.15;
+  font-weight: 700;
+  color: var(--color-brand-700);
+  margin: 0 0 24px;
+}
+
+.hero-lede {
+  font-size: clamp(16px, 1.5vw, 18px);
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 0 0 16px;
+}
+
+.hero-app-cta {
+  font-size: 14px;
+  color: var(--color-text-tertiary);
+  margin: 24px 0 0;
+}
+
+/* ----- Value grid --------------------------------------------------------- */
+
+.value-grid {
+  background: var(--color-bg-surface);
+  padding: 80px 24px;
+}
+
+.value-grid .container {
+  max-width: 1280px;
+  margin-inline: auto;
+}
+
+.section-title {
+  font-size: clamp(24px, 3vw, 36px);
+  text-align: center;
+  color: var(--color-brand-700);
+  margin: 0 0 48px;
+}
+
+.grid {
+  display: grid;
+  gap: 32px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.value-card {
+  text-align: center;
+  padding: 24px;
+}
+
+.value-card h3 {
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--color-brand-700);
+  margin: 0 0 12px;
+}
+
+.value-card p {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+  margin: 0;
+}
