@@ -42,3 +42,40 @@
   display: flex;
   gap: 24px;
 }
+
+.nav-link {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--color-text-primary);
+  text-decoration: none;
+  letter-spacing: 0.01em;
+  padding: 6px 0;
+  position: relative;
+  transition: color 0.15s ease;
+}
+
+.nav-link:hover,
+.nav-link:focus-visible {
+  color: var(--color-brand-700);
+  outline: none;
+}
+
+.nav-link::after {
+  /* Subtle underline-on-hover — no layout shift since the line
+     uses transform instead of border. */
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 0.2s ease;
+}
+
+.nav-link:hover::after,
+.nav-link:focus-visible::after {
+  transform: scaleX(1);
+}

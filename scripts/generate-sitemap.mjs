@@ -31,6 +31,7 @@ const OUT_DIR  = process.env.OUTPUT_DIR || join(__dirname, '..', 'dist', '3bayti
 
 const STATIC_PAGES = [
   { loc: '/',          changefreq: 'weekly',  priority: '1.0' },
+  { loc: '/category',  changefreq: 'weekly',  priority: '0.9' },
   // Phase 2 will add /designers, /about, /contact, /faq, /sizing-guide, etc.
 ];
 
