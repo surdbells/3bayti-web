@@ -46,6 +46,30 @@
     "directory": "./dist/3bayti-web/browser/",
     "binding": "ASSETS",
 
+    // Drop trailing slashes from HTML URLs.
+    //
+    // The site's own canonical URLs (rel=canonical, sitemap.xml,
+    // OG urls, JSON-LD @id) all use NO trailing slash:
+    //   - https://staging.3bayti.ae/category/abayas-1
+    //   - https://staging.3bayti.ae/product/la26-2637
+    //
+    // Workers Static Assets defaults to "auto-trailing-slash", which
+    // serves directory index.html files (e.g. product/la26-2637/index.html)
+    // at the SLASHED path and 307-redirects the unslashed path to the
+    // slashed one. That would mean the canonical URLs the site emits
+    // would each cost a 307 redirect on first visit — a small SEO hit
+    // and a bad UX.
+    //
+    // "drop-trailing-slash" reverses this: Workers serves
+    // product/la26-2637/index.html when the request is for
+    // /product/la26-2637 (no trailing slash), and redirects the
+    // slashed form to the canonical unslashed form. Matches the
+    // sitemap, matches the internal link structure, no 307s on first
+    // visit.
+    //
+    // Reference: https://developers.cloudflare.com/workers/static-assets/routing/advanced/html-handling/
+    "html_handling": "drop-trailing-slash",
+
     // Don't add not_found_handling. The default (no special handling)
     // means: if a request doesn't match a static asset, it falls
     // through to the Worker — which is what we want for runtime SSR.
