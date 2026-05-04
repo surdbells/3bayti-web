@@ -7,6 +7,7 @@ import {
   StackComponent,
 } from '../../shared/ui';
 import { SeoService } from '../../core/seo/seo.service';
+import { environment } from '../../../environments/environment';
 
 /**
  * /_dev/components — visual showcase of every shared UI primitive.
@@ -43,7 +44,7 @@ export class DevComponentsComponent {
     this.seo.set({
       title: 'Component preview',
       description: 'Internal UI primitive showcase.',
-      url: 'https://web.3bayti.ae/_dev/components',
+      url: `${environment.SITE_URL}/_dev/components`,
       robots: 'noindex,nofollow',
     });
   }

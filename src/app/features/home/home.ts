@@ -1,6 +1,7 @@
 import { Component, ChangeDetectionStrategy, inject } from '@angular/core';
 import { SeoService } from '../../core/seo/seo.service';
 import { organizationSchema, websiteSchema } from '../../core/seo/schema.helpers';
+import { environment } from '../../../environments/environment';
 
 /**
  * Home page — the canonical "/" route.
@@ -22,6 +23,8 @@ export class HomeComponent {
   private seo = inject(SeoService);
 
   constructor() {
+    const siteUrl = environment.SITE_URL;
+
     /* Per-page SEO. Idempotent — calling set() updates in place. */
     this.seo.set({
       title: 'Premium Abayas, Kaftans & Modest Wear',
@@ -29,7 +32,7 @@ export class HomeComponent {
         'Discover handcrafted abayas, kaftans, and modest wear from independent ' +
         'designers across the UAE. Curated styles, made-to-measure fits, delivered ' +
         'to your door.',
-      url: 'https://web.3bayti.ae/',
+      url: `${siteUrl}/`,
       type: 'website',
       titleSuffix: false,  // home title doesn't need " | 3bayti" appended
     });
@@ -41,16 +44,16 @@ export class HomeComponent {
     this.seo.setStructuredData([
       organizationSchema({
         name: '3bayti',
-        url: 'https://web.3bayti.ae/',
-        logo: 'https://web.3bayti.ae/logo-1200.png',
+        url: `${siteUrl}/`,
+        logo: `${siteUrl}/logo-1200.png`,
         sameAs: [
           // Add social profile URLs here as they're created
         ],
       }),
       websiteSchema({
         name: '3bayti',
-        url: 'https://web.3bayti.ae/',
-        searchUrlTemplate: 'https://web.3bayti.ae/search?q={search_term_string}',
+        url: `${siteUrl}/`,
+        searchUrlTemplate: `${siteUrl}/search?q={search_term_string}`,
       }),
     ]);
   }

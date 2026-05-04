@@ -39,7 +39,7 @@ export interface WebSiteSchemaOpts {
   name: string;
   url: string;
   /** Enable Google's Sitelinks Search Box by providing the search URL template. */
-  searchUrlTemplate?: string;  // e.g. 'https://web.3bayti.ae/search?q={search_term_string}'
+  searchUrlTemplate?: string;  // e.g. 'https://example.com/search?q={search_term_string}'
 }
 
 export function websiteSchema(opts: WebSiteSchemaOpts) {

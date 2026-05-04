@@ -15,7 +15,7 @@
  *
  * Environment:
  *   API_BASE_URL    — optional, defaults to https://api.3bayti.ae/v2
- *   SITE_URL        — optional, defaults to https://web.3bayti.ae
+ *   SITE_URL        — optional, defaults to https://staging.3bayti.ae
  *   OUTPUT_DIR      — optional, defaults to dist/3bayti-web/browser
  */
 
@@ -26,7 +26,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 const API_BASE = process.env.API_BASE_URL || 'https://api.3bayti.ae/v2';
-const SITE_URL = process.env.SITE_URL || 'https://web.3bayti.ae';
+const SITE_URL = process.env.SITE_URL || 'https://staging.3bayti.ae';
 const OUT_DIR  = process.env.OUTPUT_DIR || join(__dirname, '..', 'dist', '3bayti-web', 'browser');
 
 const STATIC_PAGES = [
@@ -130,6 +130,23 @@ async function main() {
   const outPath = join(OUT_DIR, 'sitemap.xml');
   writeFileSync(outPath, buildSitemap(entries));
   console.log(`[sitemap] wrote ${outPath}`);
+
+  /* robots.txt — generated here so the Sitemap: URL stays in sync with
+     SITE_URL. Static public/robots.txt was removed when SITE_URL became
+     configurable. */
+  const robotsPath = join(OUT_DIR, 'robots.txt');
+  const robotsBody =
+    `# robots.txt for 3bayti web\n` +
+    `# ${SITE_URL}/robots.txt\n` +
+    `\n` +
+    `User-agent: *\n` +
+    `Allow: /\n` +
+    `Disallow: /_dev/\n` +
+    `Disallow: /api/\n` +
+    `\n` +
+    `Sitemap: ${SITE_URL}/sitemap.xml\n`;
+  writeFileSync(robotsPath, robotsBody);
+  console.log(`[sitemap] wrote ${robotsPath}`);
 }
 
 main().catch((err) => {

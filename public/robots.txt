@@ -1,8 +1,0 @@
-# robots.txt for 3bayti web
-# https://web.3bayti.ae/robots.txt
-
-User-agent: *
-Allow: /
-Disallow: /api/
-
-Sitemap: https://web.3bayti.ae/sitemap.xml

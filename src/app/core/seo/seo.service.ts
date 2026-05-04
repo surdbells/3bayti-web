@@ -1,5 +1,6 @@
 import { Injectable, inject, DOCUMENT } from '@angular/core';
 import { Meta, Title } from '@angular/platform-browser';
+import { environment } from '../../../environments/environment';
 
 /**
  * Centralized SEO + social-share metadata management.
@@ -25,8 +26,10 @@ export class SeoService {
 
   /** Site default — override per page via `set()`. */
   private readonly siteName = '3bayti';
-  private readonly defaultImage = 'https://web.3bayti.ae/og-default.jpg';
-  private readonly siteUrl = 'https://web.3bayti.ae';
+  /** Build-time canonical URL — set via SITE_URL env var. */
+  private readonly siteUrl = environment.SITE_URL;
+  /** Default OG image. Lives at the site root. */
+  private readonly defaultImage = `${environment.SITE_URL}/og-default.jpg`;
 
   /**
    * Set all SEO + social tags for a page.

@@ -72,7 +72,10 @@ Hosting: **Cloudflare Pages** (static site, prerendered at build time — no Wor
    | Build command | `npm run build` |
    | Build output directory | `dist/3bayti-web/browser` |
    | Root directory (advanced) | leave blank |
-   | Node version | `22.x` (set in env vars: `NODE_VERSION=22`) |
+   | Node version (env var) | `NODE_VERSION=22` |
+   | Site URL (env var) | `SITE_URL=https://staging.3bayti.ae` |
+
+   **About `SITE_URL`:** this drives every canonical link, OG meta URL, sitemap entry, and JSON-LD URL on the site. Set it to whatever domain Cloudflare is serving from. When you migrate from `staging.3bayti.ae` to `3bayti.ae`, change this env var in the Cloudflare dashboard and redeploy — no code change needed. If unset, the build defaults to `https://staging.3bayti.ae`.
 
 4. **Production branch:** `master`
 5. Click **Save and Deploy**
@@ -85,9 +88,9 @@ Every push to `master` triggers a Cloudflare deploy automatically. PRs get previ
 
 The repo's GitHub Actions workflow (`.github/workflows/ci.yml`) runs `npm ci && npm run build` on every push and PR — independent of Cloudflare's build, so PRs don't merge with broken builds.
 
-### Custom domain (optional)
+### Custom domain (interim: staging.3bayti.ae, eventual: 3bayti.ae)
 
-To use `web.3bayti.ae` instead of `*.pages.dev`:
+To hook up a custom domain:
 
 1. Cloudflare dash → your Pages project → **Custom domains** → **Set up a custom domain**
 2. Enter `web.3bayti.ae`

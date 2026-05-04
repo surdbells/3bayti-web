@@ -4,6 +4,7 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "prebuild": "node scripts/inject-environment.mjs",
     "build": "ng build",
     "postbuild": "node scripts/generate-sitemap.mjs",
     "watch": "ng build --watch --configuration development",
