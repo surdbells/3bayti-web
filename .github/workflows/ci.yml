@@ -265,108 +265,153 @@ jobs:
         # it tells us nothing about whether the Worker actually serves
         # requests correctly.
         #
-        # We test three URLs:
-        #   1. /              → must be served by ASSETS (prerendered home).
-        #                       Expectation: 200, contains "Premium abayas".
-        #   2. /product/la26-2637 → top-200 prerendered PDP, ASSETS.
-        #                       Expectation: 200, contains "Laduna".
-        #   3. /product/{long-tail-slug} → NOT prerendered, runtime SSR.
-        #                       Expectation: 200, <title> contains a real
-        #                       vendor name (not the fallback "Product · 3bayti").
+        # We test three URLs against TWO targets:
+        #
+        #   Targets:
+        #     A. The fresh workers.dev URL from `wrangler deploy`.
+        #        Catches Worker-side problems (bundle, runtime, SSR
+        #        engine, allowedHosts) before any custom-domain / DNS
+        #        layer is in the picture.
+        #     B. The production custom domain (staging.3bayti.ae).
+        #        Catches custom-domain-routing problems: Pages-vs-
+        #        Workers misrouting, SSL issues, the Cloudflare zone
+        #        sending traffic somewhere unexpected. This is what
+        #        real users hit, so this is the test that matters
+        #        most for "is the migration still working in
+        #        production."
+        #
+        #   Tests (run against each target):
+        #     1. /              → must be served by ASSETS (prerendered home).
+        #                         Expectation: 200, contains "Premium abayas".
+        #     2. /product/la26-2637 → top-200 prerendered PDP, ASSETS.
+        #                         Expectation: 200, contains "Laduna".
+        #     3. /product/{long-tail-slug} → NOT prerendered, runtime SSR.
+        #                         Expectation: 200, <title> contains a real
+        #                         vendor name (not the fallback "Product · 3bayti").
         #
         # If #3 returns the fallback title, that's the SSR-broken bug
         # we built this whole migration to fix — fail the workflow loudly.
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+          # Production custom domain. Hardcoded because (a) it doesn't
+          # change per-deploy and (b) putting it in a secret would
+          # imply it's sensitive, which it isn't (the URL appears in
+          # the public sitemap.xml and rel=canonical tags).
+          PROD_URL: 'https://staging.3bayti.ae'
         run: |
           set -e
 
+          # smoke_test BASE_URL LABEL
+          # Runs all three smoke tests against the given URL.
+          # Returns 0 on pass, exits the script on failure.
+          smoke_test() {
+            local BASE="${1%/}"
+            local LABEL="$2"
+
+            echo ""
+            echo "================================================================"
+            echo " Smoke-testing target: $LABEL"
+            echo " URL: $BASE"
+            echo "================================================================"
+
+            echo ""
+            echo "[$LABEL] Test 1: Prerendered home (served by ASSETS)"
+            local HOME_BODY HOME_STATUS
+            HOME_BODY=$(curl -fsS --max-time 30 "$BASE/")
+            HOME_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$BASE/")
+            if [ "$HOME_STATUS" != "200" ]; then
+              echo "ERROR [$LABEL]: / returned $HOME_STATUS"
+              exit 1
+            fi
+            if ! echo "$HOME_BODY" | grep -q "Premium abayas"; then
+              echo "ERROR [$LABEL]: home page does not contain 'Premium abayas'"
+              exit 1
+            fi
+            echo "✓ [$LABEL] home: 200 OK, content present"
+
+            echo ""
+            echo "[$LABEL] Test 2: Prerendered top-200 PDP (served by ASSETS)"
+            local PDP_BODY PDP_STATUS
+            PDP_BODY=$(curl -fsS --max-time 30 "$BASE/product/la26-2637")
+            PDP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$BASE/product/la26-2637")
+            if [ "$PDP_STATUS" != "200" ]; then
+              echo "ERROR [$LABEL]: /product/la26-2637 returned $PDP_STATUS"
+              exit 1
+            fi
+            if ! echo "$PDP_BODY" | grep -qi "Laduna"; then
+              echo "ERROR [$LABEL]: prerendered PDP does not contain vendor 'Laduna'"
+              exit 1
+            fi
+            echo "✓ [$LABEL] prerendered PDP: 200 OK, vendor name present"
+
+            echo ""
+            echo "[$LABEL] Test 3: Long-tail PDP (RUNTIME SSR via Worker)"
+            # Pick a slug from the sitemap that is NOT in the prerendered
+            # top-200. We compute this once before the loop and reuse;
+            # but to keep the function self-contained, do it here.
+            ls dist/3bayti-web/browser/product/ | sort > /tmp/prerendered.txt
+            grep -oE '<loc>[^<]+/product/[^<]+</loc>' \
+                dist/3bayti-web/browser/sitemap.xml \
+              | sed -E 's|.*/product/([^<]+)</loc>|\1|' \
+              | sort > /tmp/all-slugs.txt
+            local LONG_TAIL
+            LONG_TAIL=$(comm -23 /tmp/all-slugs.txt /tmp/prerendered.txt | head -1)
+
+            if [ -z "$LONG_TAIL" ]; then
+              echo "WARNING [$LABEL]: no long-tail slug found (catalogue ≤ 200 products?). Skipping runtime-SSR smoke test."
+              return 0
+            fi
+
+            echo "Selected long-tail slug: $LONG_TAIL"
+            # Generous timeout — cold Worker invocations can take a few
+            # seconds, especially with an upstream API call.
+            local TAIL_BODY TAIL_STATUS TAIL_TITLE
+            TAIL_BODY=$(curl -fsS --max-time 60 "$BASE/product/$LONG_TAIL")
+            TAIL_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$BASE/product/$LONG_TAIL")
+            if [ "$TAIL_STATUS" != "200" ]; then
+              echo "ERROR [$LABEL]: /product/$LONG_TAIL returned $TAIL_STATUS — runtime SSR is broken"
+              exit 1
+            fi
+
+            # The fallback title is the static one set in app.routes.ts
+            # ("Product · 3bayti"). If we see it, the long-tail PDP did
+            # NOT actually go through SSR — the Worker is serving an
+            # empty shell, which is the exact bug this migration fixes.
+            TAIL_TITLE=$(echo "$TAIL_BODY" | grep -oE '<title>[^<]+</title>' | head -1)
+            echo "Title: $TAIL_TITLE"
+            if echo "$TAIL_TITLE" | grep -qE '<title>Product · 3bayti</title>'; then
+              echo "ERROR [$LABEL]: long-tail PDP returned the fallback title — runtime SSR is broken!"
+              echo "       The Worker is serving the empty shell instead of fetching product data."
+              exit 1
+            fi
+
+            # Sanity check: title should mention "by " (e.g. "001 by Orchid Line | 3bayti")
+            if ! echo "$TAIL_TITLE" | grep -q ' by '; then
+              echo "ERROR [$LABEL]: long-tail PDP title doesn't look like a real product title:"
+              echo "       $TAIL_TITLE"
+              exit 1
+            fi
+
+            echo "✓ [$LABEL] long-tail PDP: 200 OK, runtime SSR served real product data"
+          }
+
+          # ---- Target A: workers.dev URL (fresh from this deploy) ----
+          # This is the immediate-feedback test. If this fails, the
+          # Worker itself is broken — no point checking the production
+          # domain since it routes to the same Worker.
           if [ -z "$DEPLOYMENT_URL" ]; then
             echo "ERROR: no deployment URL available; cannot smoke-test"
             exit 1
           fi
+          smoke_test "$DEPLOYMENT_URL" "workers.dev"
 
-          # Strip trailing slash for clean concatenation.
-          BASE="${DEPLOYMENT_URL%/}"
-          echo "Smoke-testing against: $BASE"
-
-          echo ""
-          echo "=== Test 1: Prerendered home (served by ASSETS) ==="
-          HOME_BODY=$(curl -fsS --max-time 30 "$BASE/")
-          HOME_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$BASE/")
-          if [ "$HOME_STATUS" != "200" ]; then
-            echo "ERROR: / returned $HOME_STATUS"
-            exit 1
-          fi
-          if ! echo "$HOME_BODY" | grep -q "Premium abayas"; then
-            echo "ERROR: home page does not contain 'Premium abayas'"
-            exit 1
-          fi
-          echo "✓ home: 200 OK, content present"
+          # ---- Target B: production custom domain ----
+          # If this fails but workers.dev passed, the issue is in the
+          # custom-domain routing layer (DNS, SSL, zone config), not
+          # the Worker code. That's a Cloudflare-dashboard problem,
+          # not a code-deploy problem — but still a production
+          # outage, so fail the workflow loudly.
+          smoke_test "$PROD_URL" "production"
 
           echo ""
-          echo "=== Test 2: Prerendered top-200 PDP (served by ASSETS) ==="
-          PDP_BODY=$(curl -fsS --max-time 30 "$BASE/product/la26-2637")
-          PDP_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$BASE/product/la26-2637")
-          if [ "$PDP_STATUS" != "200" ]; then
-            echo "ERROR: /product/la26-2637 returned $PDP_STATUS"
-            exit 1
-          fi
-          if ! echo "$PDP_BODY" | grep -qi "Laduna"; then
-            echo "ERROR: prerendered PDP does not contain vendor 'Laduna'"
-            exit 1
-          fi
-          echo "✓ prerendered PDP: 200 OK, vendor name present"
-
-          echo ""
-          echo "=== Test 3: Long-tail PDP (RUNTIME SSR via Worker) ==="
-          # Pick a slug from the sitemap that is NOT in the prerendered
-          # top-200. Build a list of prerendered slugs from the build
-          # artifact, then diff against the sitemap-derived list.
-          # If we can't find a long-tail slug (e.g. catalogue shrinks
-          # below 200 products) we skip this test rather than fail.
-          ls dist/3bayti-web/browser/product/ | sort > /tmp/prerendered.txt
-          grep -oE '<loc>[^<]+/product/[^<]+</loc>' \
-              dist/3bayti-web/browser/sitemap.xml \
-            | sed -E 's|.*/product/([^<]+)</loc>|\1|' \
-            | sort > /tmp/all-slugs.txt
-          LONG_TAIL=$(comm -23 /tmp/all-slugs.txt /tmp/prerendered.txt | head -1)
-
-          if [ -z "$LONG_TAIL" ]; then
-            echo "WARNING: no long-tail slug found (catalogue ≤ 200 products?). Skipping runtime-SSR smoke test."
-            exit 0
-          fi
-
-          echo "Selected long-tail slug: $LONG_TAIL"
-          # Generous timeout — cold Worker invocations can take a few
-          # seconds, especially with an upstream API call.
-          TAIL_BODY=$(curl -fsS --max-time 60 "$BASE/product/$LONG_TAIL")
-          TAIL_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 60 "$BASE/product/$LONG_TAIL")
-          if [ "$TAIL_STATUS" != "200" ]; then
-            echo "ERROR: /product/$LONG_TAIL returned $TAIL_STATUS — runtime SSR is broken"
-            exit 1
-          fi
-
-          # The fallback title is the static one set in app.routes.ts
-          # ("Product · 3bayti"). If we see it, the long-tail PDP did
-          # NOT actually go through SSR — the Worker is serving an
-          # empty shell, which is the exact bug this migration fixes.
-          TAIL_TITLE=$(echo "$TAIL_BODY" | grep -oE '<title>[^<]+</title>' | head -1)
-          echo "Title: $TAIL_TITLE"
-          if echo "$TAIL_TITLE" | grep -qE '<title>Product · 3bayti</title>'; then
-            echo "ERROR: long-tail PDP returned the fallback title — runtime SSR is broken!"
-            echo "       The Worker is serving the empty shell instead of fetching product data."
-            exit 1
-          fi
-
-          # Sanity check: title should mention "by " (e.g. "001 by Orchid Line | 3bayti")
-          if ! echo "$TAIL_TITLE" | grep -q ' by '; then
-            echo "ERROR: long-tail PDP title doesn't look like a real product title:"
-            echo "       $TAIL_TITLE"
-            exit 1
-          fi
-
-          echo "✓ long-tail PDP: 200 OK, runtime SSR served real product data"
-
-          echo ""
-          echo "🎉 All smoke tests passed."
+          echo "🎉 All smoke tests passed against both targets."
