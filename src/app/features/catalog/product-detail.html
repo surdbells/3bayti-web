@@ -1,0 +1,207 @@
+<main class="pdp-page">
+  <ui-container size="default">
+
+    @if (loading()) {
+      <ui-text tone="secondary">Loading…</ui-text>
+    } @else if (notFound()) {
+      <header class="pdp-not-found">
+        <ui-stack gap="md">
+          <p class="eyebrow">Product not found</p>
+          <ui-heading level="h1" size="xl">This piece is no longer available</ui-heading>
+          <ui-text size="lg" tone="secondary">
+            The product you're looking for may have been removed or sold out.
+            Browse our other collections below.
+          </ui-text>
+          <p>
+            <a href="/category" class="back-link">← Back to categories</a>
+          </p>
+        </ui-stack>
+      </header>
+    } @else if (product(); as p) {
+
+      <!-- Breadcrumb (visual). JSON-LD version comes in W2.2b. -->
+      <nav class="pdp-breadcrumb" aria-label="Breadcrumb">
+        <a href="/" class="crumb-link">Home</a>
+        <span class="crumb-sep" aria-hidden="true">›</span>
+        <a href="/category" class="crumb-link">Categories</a>
+        @if (categoryUrl(); as catUrl) {
+          <span class="crumb-sep" aria-hidden="true">›</span>
+          <a [href]="catUrl" class="crumb-link">{{ p.category_slug }}</a>
+        }
+        <span class="crumb-sep" aria-hidden="true">›</span>
+        <span class="crumb-current" aria-current="page">{{ p.name }}</span>
+      </nav>
+
+      <div class="pdp-grid">
+
+        <!-- ======================================================== -->
+        <!-- LEFT COLUMN: Image gallery                                -->
+        <!-- ======================================================== -->
+        <section class="pdp-gallery" aria-label="Product images">
+          <div class="pdp-main-image">
+            @if (activeImage(); as img) {
+              <img
+                [src]="img.url"
+                [alt]="activeImageAlt()"
+                [width]="img.width || 900"
+                [height]="img.height || 1200"
+                loading="eager"
+                fetchpriority="high"
+                decoding="async"
+              />
+            } @else {
+              <div class="pdp-fallback" aria-hidden="true">
+                <span>{{ initial() }}</span>
+              </div>
+            }
+
+            <!-- Status pills (top-left of main image) -->
+            @if (p.is_new || p.is_bestseller || isOnSale()) {
+              <div class="pdp-pills">
+                @if (p.is_new) { <span class="pill pill-new">New</span> }
+                @if (p.is_bestseller) { <span class="pill pill-bestseller">Bestseller</span> }
+                @if (isOnSale()) { <span class="pill pill-sale">Sale</span> }
+              </div>
+            }
+          </div>
+
+          <!-- Thumbnails. Only render if there's more than one image. -->
+          @if (p.images && p.images.length > 1) {
+            <div class="pdp-thumbnails" role="list" aria-label="Additional product images">
+              @for (img of p.images; track img.url; let i = $index) {
+                <button
+                  type="button"
+                  role="listitem"
+                  class="pdp-thumb"
+                  [class.is-active]="i === activeImageIndex()"
+                  [attr.aria-label]="'Show image ' + (i + 1) + ' of ' + p.images.length"
+                  [attr.aria-pressed]="i === activeImageIndex()"
+                  (click)="selectImage(i)"
+                  (keydown)="onThumbnailKeydown($event, i)"
+                >
+                  <img
+                    [src]="img.url"
+                    [alt]="img.alt || (p.name + ' image ' + (i + 1))"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                </button>
+              }
+            </div>
+          }
+        </section>
+
+        <!-- ======================================================== -->
+        <!-- RIGHT COLUMN: Product info                                -->
+        <!-- ======================================================== -->
+        <section class="pdp-info" aria-label="Product details">
+
+          @if (p.vendor && p.vendor.name) {
+            <p class="pdp-vendor">
+              @if (vendorUrl(); as vUrl) {
+                <a [href]="vUrl">{{ p.vendor.name }}</a>
+              } @else {
+                {{ p.vendor.name }}
+              }
+            </p>
+          }
+
+          <ui-heading level="h1" size="xl">{{ p.name }}</ui-heading>
+
+          @if (p.sku) {
+            <p class="pdp-sku">SKU: {{ p.sku }}</p>
+          }
+
+          <!-- Price -->
+          <div class="pdp-price">
+            @if (isOnSale() && p.sale_price) {
+              <span class="price-current">{{ formatMoney(p.sale_price) }}</span>
+              <span class="price-original">{{ formatMoney(p.price) }}</span>
+            } @else {
+              <span class="price-current">{{ formatMoney(p.price) }}</span>
+            }
+          </div>
+
+          <!-- Stock state -->
+          <p class="pdp-stock" [class.pdp-stock--out]="!p.in_stock">
+            @if (p.in_stock) {
+              <span class="stock-dot stock-dot--in" aria-hidden="true"></span>
+              In stock
+            } @else {
+              <span class="stock-dot stock-dot--out" aria-hidden="true"></span>
+              Out of stock
+            }
+          </p>
+
+          <!-- Sizes -->
+          @if (p.sizes && p.sizes.length > 0) {
+            <fieldset class="pdp-options">
+              <legend>Size</legend>
+              <div class="pdp-chips">
+                @for (s of p.sizes; track s.label) {
+                  <span
+                    class="pdp-chip"
+                    [class.pdp-chip--out]="!s.in_stock"
+                    [attr.aria-label]="s.label + (s.in_stock ? '' : ' (out of stock)')"
+                  >
+                    {{ s.label }}
+                  </span>
+                }
+              </div>
+            </fieldset>
+          }
+
+          <!-- Colors -->
+          @if (p.colors && p.colors.length > 0) {
+            <fieldset class="pdp-options">
+              <legend>Color</legend>
+              <div class="pdp-chips">
+                @for (c of p.colors; track c.label) {
+                  <span
+                    class="pdp-chip pdp-chip--color"
+                    [class.pdp-chip--out]="!c.in_stock"
+                    [attr.aria-label]="c.label + (c.in_stock ? '' : ' (out of stock)')"
+                  >
+                    {{ c.label }}
+                  </span>
+                }
+              </div>
+            </fieldset>
+          }
+
+          <!-- Description -->
+          @if (descriptionParagraphs().length > 0) {
+            <div class="pdp-description">
+              <ui-heading level="h2" size="sm">Description</ui-heading>
+              @for (para of descriptionParagraphs(); track $index) {
+                <p>{{ para }}</p>
+              }
+            </div>
+          }
+
+          <!-- Materials, fabric, care — only render if backend supplied data -->
+          @if (p.fabric || p.materials?.length || p.care_instructions) {
+            <div class="pdp-details">
+              <ui-heading level="h2" size="sm">Details</ui-heading>
+              <dl class="pdp-detail-list">
+                @if (p.fabric) {
+                  <dt>Fabric</dt>
+                  <dd>{{ p.fabric }}</dd>
+                }
+                @if (p.materials && p.materials.length > 0) {
+                  <dt>Materials</dt>
+                  <dd>{{ p.materials.join(', ') }}</dd>
+                }
+                @if (p.care_instructions) {
+                  <dt>Care</dt>
+                  <dd>{{ p.care_instructions }}</dd>
+                }
+              </dl>
+            </div>
+          }
+        </section>
+
+      </div>
+    }
+  </ui-container>
+</main>

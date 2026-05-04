@@ -99,6 +99,28 @@ jobs:
           fi
           echo "✓ Category-detail prerendered ($(wc -c < $DET) bytes, $NPRODUCTS products)"
 
+          # Verify PDP prerender for la26-2637 (a stable, known product slug
+          # from Laduna Abaya). The build prerenders the 200 most-recent
+          # products; LA26 is recent enough to be in that window. If LA26
+          # ever falls out of the recent-200 window (i.e. hundreds of newer
+          # products are added), pick another stable slug to spot-check.
+          PDP=dist/3bayti-web/browser/product/la26-2637/index.html
+          if [ ! -f "$PDP" ]; then
+            echo "ERROR: $PDP not found — /product/:slug prerender failed"
+            echo "       Check that /v2/products was reachable during build."
+            exit 1
+          fi
+          if ! grep -qi "Laduna" "$PDP"; then
+            echo "ERROR: PDP missing vendor name 'Laduna'"
+            exit 1
+          fi
+          PDP_IMAGES=$(grep -oE 'src="https://api\.3bayti\.ae/cdn-cgi/image[^"]+' "$PDP" | wc -l)
+          if [ "$PDP_IMAGES" -lt 1 ]; then
+            echo "ERROR: no product images rendered on /product/la26-2637"
+            exit 1
+          fi
+          echo "✓ PDP prerendered ($(wc -c < $PDP) bytes, $PDP_IMAGES image elements)"
+
       - name: Verify sitemap + robots generated
         run: |
           if [ ! -f dist/3bayti-web/browser/sitemap.xml ]; then

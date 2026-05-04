@@ -41,6 +41,24 @@ export const routes: Routes = [
     title: 'Shop by Category · 3bayti',
   },
   {
+    /* Product detail — `/product/:slug`. The PDP. The 200 most-recent
+       products are prerendered at build time (see app.routes.server.ts
+       for the cap and slug fetcher). The remaining ~1,400 products
+       fall back to runtime SSR — slower first byte but still fully
+       indexable.
+
+       Why the cap: building all 1,657 PDPs would push build time past
+       Cloudflare Pages' practical limits. 200 prerendered + runtime
+       SSR for the long tail is the chosen balance per W2.2 sprint
+       planning. */
+    path: 'product/:slug',
+    loadComponent: () =>
+      import('./features/catalog/product-detail').then(m => m.ProductDetailComponent),
+    /* Title set dynamically via SeoService. Fallback for crawlers
+       that miss the dynamic title update. */
+    title: 'Product · 3bayti',
+  },
+  {
     /* Dev-only component preview. noindex'd via SeoService inside the
        component. Lazy-loaded so it doesn't bloat the production bundle
        for normal users. */
