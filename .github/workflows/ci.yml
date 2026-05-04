@@ -72,6 +72,33 @@ jobs:
           fi
           echo "✓ Categories page prerendered ($(wc -c < $CAT) bytes)"
 
+          # Verify category-detail prerender for the abayas slug.
+          # If the API was up at build time, all 8 category-detail routes
+          # are prerendered (one per slug from /v2/categories). We only
+          # spot-check abayas because (a) it has the most products, so a
+          # zero-product issue would also hit it, and (b) it's a stable
+          # slug that's never going away.
+          DET=dist/3bayti-web/browser/category/abayas-1/index.html
+          if [ ! -f "$DET" ]; then
+            echo "ERROR: $DET not found — /category/:slug prerender failed"
+            echo "       Check that /v2/categories was reachable during build."
+            exit 1
+          fi
+          if ! grep -q "abayas" "$DET" -i; then
+            echo "ERROR: category-detail page missing expected content"
+            exit 1
+          fi
+          if ! grep -q '"@type":"ItemList"' "$DET"; then
+            echo "ERROR: ItemList JSON-LD missing from category-detail prerender"
+            exit 1
+          fi
+          NPRODUCTS=$(grep -oE 'class="product-card-name"' "$DET" | wc -l)
+          if [ "$NPRODUCTS" -lt 1 ]; then
+            echo "ERROR: no product cards rendered on /category/abayas-1"
+            exit 1
+          fi
+          echo "✓ Category-detail prerendered ($(wc -c < $DET) bytes, $NPRODUCTS products)"
+
       - name: Verify sitemap + robots generated
         run: |
           if [ ! -f dist/3bayti-web/browser/sitemap.xml ]; then

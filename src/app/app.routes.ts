@@ -5,10 +5,10 @@ import { HomeComponent } from './features/home/home';
  * Top-level route table for the public web app.
  *
  * Phase 1: home + a dev-only component preview + categories index.
- * Phase 2 adds /category/:slug, /product/:slug, /search.
+ * Phase 2 adds: /category/:slug ✓ + /product/:slug + /designer + /designer/:slug.
  *
- * All routes are SSR'd by default; route-level data resolvers will
- * fetch from the API server-side as they're added.
+ * All routes are SSR'd by default; route-level data is fetched server-
+ * side via TransferState (see individual feature components).
  */
 export const routes: Routes = [
   {
@@ -25,6 +25,19 @@ export const routes: Routes = [
     path: 'category',
     loadComponent: () =>
       import('./features/categories/categories').then(m => m.CategoriesComponent),
+    title: 'Shop by Category · 3bayti',
+  },
+  {
+    /* Category detail — `/category/:slug`. Each of the 8 categories
+       is prerendered at build time (see app.routes.server.ts for the
+       slug list provider). Renders category metadata + first 20
+       products with full SEO + ItemList JSON-LD. */
+    path: 'category/:slug',
+    loadComponent: () =>
+      import('./features/categories/category-detail').then(m => m.CategoryDetailComponent),
+    /* Title is set dynamically via SeoService once the data loads;
+       the static title here is a fallback for the brief moment before
+       hydration and for crawlers that ignore <title> updates. */
     title: 'Shop by Category · 3bayti',
   },
   {

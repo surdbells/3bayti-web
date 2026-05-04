@@ -148,3 +148,36 @@ export function breadcrumbSchema(items: BreadcrumbItem[]) {
     })),
   };
 }
+
+/**
+ * An item in an ItemList (used for category landing pages, search
+ * results, vendor storefronts). Position starts at 1.
+ */
+export interface ItemListEntry {
+  position: number;
+  name: string;
+  url: string;
+  image?: string;
+}
+
+/**
+ * ItemList schema — lets Google understand that a page contains a
+ * collection of related items. Helps with rich results for category
+ * pages where users expect to see "all the abayas" type listings.
+ *
+ * Reference: https://schema.org/ItemList
+ */
+export function itemListSchema(items: ItemListEntry[]) {
+  return {
+    '@type': 'ItemList',
+    itemListOrder: 'https://schema.org/ItemListOrderDescending',
+    numberOfItems: items.length,
+    itemListElement: items.map((item) => ({
+      '@type': 'ListItem',
+      position: item.position,
+      name: item.name,
+      url: item.url,
+      ...(item.image ? { image: item.image } : {}),
+    })),
+  };
+}
