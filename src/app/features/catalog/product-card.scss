@@ -1,0 +1,212 @@
+/* ProductCard — editorial-luxury aesthetic. Generous whitespace,
+   serif headlines, brand-gold accents.
+
+   Card sizing: deliberately doesn't set a width — caller controls
+   via grid-column-width or flexbox. The card fills its slot.
+   This makes the same component work in 4-up category grids AND
+   in horizontally-scrolling related-products carousels. */
+
+:host {
+  display: block;
+}
+
+.product-card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: inherit;
+  height: 100%;
+  cursor: pointer;
+  transition: transform 0.18s cubic-bezier(0.2, 0.8, 0.4, 1);
+}
+
+.product-card:hover,
+.product-card:focus-visible {
+  outline: none;
+  transform: translateY(-2px);
+}
+
+.product-card:hover .product-card-image,
+.product-card:focus-visible .product-card-image {
+  border-color: var(--color-brand-700);
+}
+
+.product-card.is-out-of-stock .product-card-image {
+  opacity: 0.55;
+}
+
+.product-card.is-out-of-stock .product-card-name {
+  color: var(--color-text-tertiary);
+}
+
+/* ------- Image -------------------------------------------------------- */
+
+.product-card-image {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;          /* portrait — typical fashion product shot */
+  background: var(--color-bg-muted);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.18s ease;
+}
+
+.product-card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.product-card-fallback {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(
+    135deg,
+    var(--color-brand-100) 0%,
+    var(--color-brand-200) 100%
+  );
+  color: var(--color-brand-700);
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 64px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.product-card-fallback span {
+  /* Optical adjustment for serif caps */
+  transform: translateY(-2px);
+}
+
+/* ------- Status pills ------------------------------------------------- */
+
+.product-card-pills {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+}
+
+.pill {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.pill-new {
+  background: var(--color-brand-700);
+  color: var(--color-text-inverse);
+}
+
+.pill-bestseller {
+  background: var(--color-brand-500);
+  color: white;
+}
+
+.pill-sale {
+  background: #b91c1c;  /* deep red — universal sale signal */
+  color: white;
+}
+
+/* ------- Out-of-stock overlay ----------------------------------------- */
+
+.product-card-stock-overlay {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  right: 12px;
+  background: rgba(35, 28, 22, 0.85);
+  color: var(--color-text-inverse);
+  text-align: center;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 4px;
+}
+
+/* ------- Meta (text below image) -------------------------------------- */
+
+.product-card-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding-top: 12px;
+  padding-inline: 4px;  /* slight inner pad so text doesn't kiss image edge */
+}
+
+.product-card-vendor {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+.product-card-name {
+  margin: 0;
+  font-family: 'Playfair Display', Georgia, serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-brand-700);
+  line-height: 1.3;
+  /* Two-line clamp — long product names get an ellipsis */
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.product-card-price {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin-top: 4px;
+  font-variant-numeric: tabular-nums;
+}
+
+.price-current {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-brand-700);
+  letter-spacing: 0.01em;
+}
+
+.price-original {
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  text-decoration: line-through;
+}
+
+.product-card-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.rating-stars {
+  color: #d4a017;  /* gold star */
+  font-size: 13px;
+  line-height: 1;
+}
+
+.rating-count {
+  color: var(--color-text-tertiary);
+}

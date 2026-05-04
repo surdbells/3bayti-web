@@ -93,3 +93,17 @@
   font-size: 13px;
   font-weight: 500;
 }
+
+/* Product grid showcase — slightly different padding from .dev-card to
+   give the product cards room to breathe. The grid itself is the same
+   responsive auto-fill pattern that /category and /category/:slug will
+   use. */
+.dev-card--product-grid {
+  padding: 24px;
+}
+
+.dev-product-grid {
+  display: grid;
+  gap: 24px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
