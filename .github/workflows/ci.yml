@@ -1,0 +1,70 @@
+name: CI
+
+# Runs on every push to master and every PR. Catches build breakage
+# BEFORE Cloudflare Pages tries to deploy. Cloudflare runs its own build
+# on deploy, but having CI run independently:
+#   - Surfaces failures faster (10s vs 60s+ in CF queue)
+#   - Blocks PR merge if the build is broken
+#   - Doesn't depend on CF being up
+#
+# This is build-only — no test step yet because there are no tests.
+# Once we have tests, add an `npm test` step and require it to pass
+# on PRs.
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+# Cancel in-progress runs when a newer commit is pushed to the same PR.
+# Saves CI minutes; only the latest commit's build matters.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        # `npm ci` is stricter than `npm install` — fails if package-lock
+        # is out of sync, never modifies the lockfile. The right call for CI.
+        run: npm ci
+
+      - name: Build production bundle
+        run: npm run build
+
+      - name: Verify SSR output
+        # Sanity check: confirms the prerendered home page actually has
+        # content (not an empty <app-root>). If SSR breaks silently in
+        # the build, this catches it — without this step, Cloudflare
+        # would happily deploy an empty shell.
+        run: |
+          INDEX=dist/3bayti-web/browser/index.html
+          if [ ! -f "$INDEX" ]; then
+            echo "ERROR: $INDEX not found"
+            exit 1
+          fi
+          if ! grep -q "Premium abayas" "$INDEX"; then
+            echo "ERROR: home page hero text missing — SSR may have failed"
+            exit 1
+          fi
+          echo "✓ Prerendered HTML verified ($(wc -c < $INDEX) bytes)"
+
+      - name: Verify sitemap generated
+        run: |
+          if [ ! -f dist/3bayti-web/browser/sitemap.xml ]; then
+            echo "ERROR: sitemap.xml missing — postbuild hook may have failed"
+            exit 1
+          fi
+          echo "✓ sitemap.xml present"
