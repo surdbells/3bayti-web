@@ -1,29 +1,38 @@
 import { Component, ChangeDetectionStrategy, Input } from '@angular/core';
-import { NgTemplateOutlet } from '@angular/common';
 import { Money, Product } from './product.model';
 
 /**
- * ProductCard — single card in a product grid.
+ * ProductCard — single card in any product display surface.
  *
  * Used by:
  *   - /category/:slug              (W2.1)
  *   - /product/:slug related grid  (W2.2)
- *   - /designer/:slug storefront   (W2.3)
- *   - /search results              (Phase 3)
+ *   - Home page product strips     (Phase 1)
+ *   - /designer/:slug storefront   (Phase 6)
+ *   - /search results              (Phase 6)
+ *
+ * Design language: "Gilded Boutique" — locked in roadmap §4.4.
+ *   - Cream surface (#fdfaf3) lifts off the canvas
+ *   - 20px card radius, 14px image radius with 14px padding (image
+ *     floats inside the card, doesn't bleed to its edges)
+ *   - Pronounced shadow at rest, dramatic 6px lift on hover
+ *   - Cormorant italic vendor → Playfair product → Inter price
+ *   - Gold ornament dot divider between name and price/rating
+ *   - Frosted-glass badge (top-left) + like button (top-right)
+ *   - Out-of-stock and sale-price treatments
  *
  * Renders entirely from a typed Product object. No API calls, no async.
  * SSR-safe (no DOM access, no `window`, no `document`).
  *
- * Defensive design choices:
- *   - Image URL falsy / missing → renders a letter-fallback (same
- *     visual pattern used in /category for category icons)
- *   - vendor missing → vendor row hidden (some products may legitimately
- *     have no vendor in early data)
+ * Defensive design choices preserved from prior version:
+ *   - Image URL falsy → letter-fallback (brand-colored cream square
+ *     with first character of product name)
+ *   - vendor missing → vendor row hidden
  *   - sale_price missing or not lower than price → only regular price shown
  *   - rating === null → rating row hidden (don't fake a 0.0)
- *   - in_stock === false → card gets a soft "out of stock" treatment
- *   - product.slug missing or empty → entire card renders without an
- *     anchor (still visible, just not clickable; better than crashing)
+ *   - in_stock === false → soft "out of stock" treatment, hover disabled
+ *   - product.slug missing → renders without an anchor (still visible,
+ *     just not clickable; better than crashing)
  *
  * The card link uses anchor href (not routerLink) because every card on
  * a category page is server-rendered and many won't be hydrated until
@@ -33,76 +42,119 @@ import { Money, Product } from './product.model';
 @Component({
   selector: 'ui-product-card',
   standalone: true,
-  imports: [NgTemplateOutlet],
   changeDetection: ChangeDetectionStrategy.OnPush,
   template: `
     @if (product) {
       @if (product.slug) {
         <a [href]="productUrl()" class="product-card" [class.is-out-of-stock]="!product.in_stock">
-          <ng-container *ngTemplateOutlet="cardBody"></ng-container>
+          <div class="product-card__image-wrap">
+            @if (product.primary_image?.url) {
+              <img
+                [src]="product.primary_image!.url"
+                [alt]="imageAlt()"
+                loading="lazy"
+                decoding="async"
+              />
+            } @else {
+              <div class="product-card__fallback" aria-hidden="true">
+                <span>{{ initial() }}</span>
+              </div>
+            }
+
+            <!-- Top-left: status badge (only one shown, in priority
+                 order: Sale > New > Bestseller). The previous design
+                 stacked all three; the new spec keeps it cleaner. -->
+            @if (isOnSale()) {
+              <span class="product-card__badge product-card__badge--sale">Sale</span>
+            } @else if (product.is_new) {
+              <span class="product-card__badge">New</span>
+            } @else if (product.is_bestseller) {
+              <span class="product-card__badge">Best seller</span>
+            }
+
+            <!-- Top-right: like / wishlist button. Wishlist behavior
+                 lands in Phase 5 (local-first then merge-on-login).
+                 For now this is decorative — clicking does nothing. -->
+            <button
+              type="button"
+              class="product-card__like"
+              aria-label="Save to wishlist"
+              (click)="onLikeClick($event)"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
+              </svg>
+            </button>
+
+            @if (!product.in_stock) {
+              <div class="product-card__stock-overlay">
+                <span>Out of stock</span>
+              </div>
+            }
+          </div>
+
+          <div class="product-card__meta">
+            @if (product.vendor?.name) {
+              <p class="product-card__vendor">{{ product.vendor!.name }}</p>
+            }
+
+            <h3 class="product-card__name">{{ product.name }}</h3>
+
+            <div class="product-card__divider" aria-hidden="true">
+              <span class="product-card__divider-line"></span>
+              <span class="product-card__divider-mark"></span>
+              <span class="product-card__divider-line"></span>
+            </div>
+
+            <div class="product-card__price-row">
+              <span class="product-card__price">
+                @if (isOnSale() && product.sale_price) {
+                  <span class="product-card__price-current product-card__price-current--sale">
+                    {{ formatMoney(product.sale_price) }}
+                  </span>
+                  <span class="product-card__price-original">{{ formatMoney(product.price) }}</span>
+                } @else {
+                  <span class="product-card__price-current">{{ formatMoney(product.price) }}</span>
+                }
+              </span>
+
+              @if (product.rating !== null && product.rating !== undefined && product.review_count) {
+                <span class="product-card__rating">
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" />
+                  </svg>
+                  {{ product.rating.toFixed(1) }}
+                  <span class="product-card__rating-count">({{ product.review_count }})</span>
+                </span>
+              }
+            </div>
+          </div>
         </a>
       } @else {
+        <!-- Defensive: missing slug renders the card without an anchor.
+             Same visual, no navigation. -->
         <div class="product-card" [class.is-out-of-stock]="!product.in_stock">
-          <ng-container *ngTemplateOutlet="cardBody"></ng-container>
+          <div class="product-card__image-wrap">
+            @if (product.primary_image?.url) {
+              <img [src]="product.primary_image!.url" [alt]="imageAlt()" loading="lazy" decoding="async" />
+            } @else {
+              <div class="product-card__fallback" aria-hidden="true">
+                <span>{{ initial() }}</span>
+              </div>
+            }
+          </div>
+          <div class="product-card__meta">
+            @if (product.vendor?.name) {
+              <p class="product-card__vendor">{{ product.vendor!.name }}</p>
+            }
+            <h3 class="product-card__name">{{ product.name }}</h3>
+            <div class="product-card__price-row">
+              <span class="product-card__price">{{ formatMoney(product.price) }}</span>
+            </div>
+          </div>
         </div>
       }
     }
-
-    <ng-template #cardBody>
-      <div class="product-card-image">
-        @if (product?.primary_image?.url) {
-          <img
-            [src]="product!.primary_image!.url"
-            [alt]="imageAlt()"
-            loading="lazy"
-            decoding="async"
-          />
-        } @else {
-          <!-- Letter fallback: brand-colored circle with first character. -->
-          <div class="product-card-fallback" aria-hidden="true">
-            <span>{{ initial() }}</span>
-          </div>
-        }
-
-        <!-- Status pills (top-right corner of image) -->
-        @if (product && (product.is_new || product.is_bestseller || isOnSale())) {
-          <div class="product-card-pills">
-            @if (product.is_new) { <span class="pill pill-new">New</span> }
-            @if (product.is_bestseller) { <span class="pill pill-bestseller">Bestseller</span> }
-            @if (isOnSale()) { <span class="pill pill-sale">Sale</span> }
-          </div>
-        }
-
-        @if (product && !product.in_stock) {
-          <div class="product-card-stock-overlay">Out of stock</div>
-        }
-      </div>
-
-      <div class="product-card-meta">
-        @if (product?.vendor?.name) {
-          <p class="product-card-vendor">{{ product!.vendor!.name }}</p>
-        }
-
-        <h3 class="product-card-name">{{ product?.name }}</h3>
-
-        <div class="product-card-price">
-          @if (isOnSale() && product?.sale_price) {
-            <span class="price-current">{{ formatMoney(product!.sale_price!) }}</span>
-            <span class="price-original">{{ formatMoney(product!.price) }}</span>
-          } @else if (product) {
-            <span class="price-current">{{ formatMoney(product.price) }}</span>
-          }
-        </div>
-
-        @if (product && product.rating !== null && product.rating !== undefined && product.review_count) {
-          <div class="product-card-rating">
-            <span class="rating-stars" aria-hidden="true">★</span>
-            <span>{{ product.rating.toFixed(1) }}</span>
-            <span class="rating-count">({{ product.review_count }})</span>
-          </div>
-        }
-      </div>
-    </ng-template>
   `,
   styleUrl: './product-card.scss',
 })
@@ -135,8 +187,10 @@ export class ProductCardComponent {
   }
 
   /**
-   * Format a Money value. AED 350.00 → "AED 350" (we drop trailing
-   * .00 because integer prices are common). Decimals shown if present.
+   * Format a Money value. Drops trailing .00 because integer prices are
+   * common in this catalog. Examples:
+   *   { amount: 530, currency: 'AED' } → "AED 530"
+   *   { amount: 1250.5, currency: 'AED' } → "AED 1,250.50"
    */
   formatMoney(money: Money): string {
     const amount = Number(money.amount);
@@ -148,5 +202,17 @@ export class ProductCardComponent {
           maximumFractionDigits: 2,
         });
     return `${money.currency} ${formatted}`;
+  }
+
+  /**
+   * Like button click. Currently a no-op — wishlist functionality
+   * lands in Phase 5 (local-first guest wishlist with merge on login).
+   * The button intercepts the click so it doesn't trigger the parent
+   * anchor's navigation.
+   */
+  onLikeClick(event: MouseEvent): void {
+    event.preventDefault();
+    event.stopPropagation();
+    /* TODO Phase 5: invoke WishlistService.toggle(product.slug) */
   }
 }
