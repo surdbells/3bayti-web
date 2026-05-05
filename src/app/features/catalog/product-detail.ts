@@ -157,6 +157,39 @@ export class ProductDetailComponent {
     return p.sale_price.amount < p.price.amount;
   });
 
+  /**
+   * Aggregate rating to display, or null if there's nothing meaningful
+   * to show. Used by both the visible star block and (W2.2b Phase 2)
+   * the schema.org JSON-LD AggregateRating — both must reflect the
+   * same numbers, which is why this is a single source of truth.
+   *
+   * Returns null when:
+   *   - product hasn't loaded yet
+   *   - rating is null/undefined (no rating data at all)
+   *   - review_count is 0 or missing (no reviews → showing a 0-star
+   *     widget would be visually misleading)
+   *
+   * Google's structured-data guidelines also reject AggregateRating
+   * without a positive reviewCount, so this null guard protects both
+   * surfaces simultaneously.
+   */
+  readonly aggregateRating = computed<{ value: number; count: number } | null>(() => {
+    const p = this.product();
+    if (!p) return null;
+    const value = p.rating;
+    const count = p.review_count ?? 0;
+    if (value == null || count <= 0) return null;
+    return { value, count };
+  });
+
+  /**
+   * Static array used by the template to render star icons. Five
+   * positions; the template fills/empties each based on whether the
+   * average rating reaches that position. Sourced once here so the
+   * template stays declarative.
+   */
+  readonly starPositions = [1, 2, 3, 4, 5] as const;
+
   /** Computed page title — fed to SeoService AND displayed in <title>. */
   readonly pageTitle = computed(() => {
     const p = this.product();
@@ -260,6 +293,48 @@ export class ProductDetailComponent {
   /** Letter for the image-fallback case. */
   initial(): string {
     return (this.product()?.name?.[0] ?? '?').toUpperCase();
+  }
+
+  /**
+   * Returns the fill ratio (0–1) for the star at the given 1-based
+   * position, given the current aggregate rating. Lets the template
+   * render half-filled stars when the rating isn't a whole number.
+   *
+   * Examples (rating = 4.6):
+   *   pos 1 → 4.6 − 0 = 4.6, clamped → 1.0 (full)
+   *   pos 4 → 4.6 − 3 = 1.6, clamped → 1.0 (full)
+   *   pos 5 → 4.6 − 4 = 0.6, clamped → 0.6 (60% filled)
+   *   pos 5 with rating = 3 → 3 − 4 = −1, clamped → 0.0 (empty)
+   */
+  starFillFor(position: number): number {
+    const rating = this.aggregateRating()?.value ?? 0;
+    return Math.max(0, Math.min(1, rating - (position - 1)));
+  }
+
+  /**
+   * Grammatically correct review count text: "1 review" vs "5 reviews".
+   * Saves the template from inline conditionals.
+   */
+  reviewCountLabel(count: number): string {
+    return count === 1 ? '1 review' : `${count} reviews`;
+  }
+
+  /**
+   * Formats a review's ISO `created_at` to a short, locale-aware date.
+   * Returns null when the field is null/empty so the template can omit
+   * the date entirely (some reviews in the dataset have no date).
+   */
+  formatReviewDate(iso: string | null | undefined): string | null {
+    if (!iso) return null;
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return null;
+    /* en-AE locale matches the rest of the site (en-AE for currency,
+       ditto for dates). */
+    return date.toLocaleDateString('en-AE', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
   }
 
   /** Alt text for the active image. Falls back to product name. */

@@ -400,3 +400,195 @@
   text-decoration: underline;
   text-underline-offset: 3px;
 }
+
+/* ----- Aggregate rating (under H1) ----------------------------------- */
+
+/* Star primitive used by both the aggregate-rating block and per-review
+   ratings in the Reviews section. The visual is two stacked SVG paths:
+   a muted "track" star outline behind, a brand-colored "fill" star on
+   top whose visible portion is controlled by the --fill CSS variable
+   (0–1). This lets us render fractional ratings (e.g. 4.6) cleanly
+   without needing half-star icons.
+
+   Sized via `font-size` on the parent so the stars scale with text;
+   the `.star--sm` modifier produces the smaller size used in review
+   cards. */
+
+.star {
+  --fill: 0;
+  position: relative;
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  flex-shrink: 0;
+}
+
+.star__track,
+.star__fill {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.star__track {
+  fill: var(--color-border-subtle);
+}
+
+.star__fill {
+  fill: var(--color-brand-500);
+  /* Reveal only the leftmost (--fill * 100)% of the star. */
+  clip-path: inset(0 calc((1 - var(--fill)) * 100%) 0 0);
+}
+
+.pdp-rating {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.pdp-rating__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 18px;
+  /* Inherit color so star fill via currentColor would also work; but
+     we explicitly use brand-500 in .star__fill, so this is mostly for
+     consistency. */
+  line-height: 0;
+}
+
+.pdp-rating__text {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.pdp-rating__value {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.pdp-rating__sep {
+  color: var(--color-text-tertiary);
+}
+
+.pdp-rating__count {
+  color: var(--color-text-secondary);
+  text-decoration: none;
+}
+
+.pdp-rating__count:hover,
+.pdp-rating__count:focus-visible {
+  color: var(--color-brand-700);
+  outline: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* ----- Reviews section ----------------------------------------------- */
+
+.pdp-reviews {
+  margin-top: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  scroll-margin-top: 80px; /* Sticky header offset for #reviews anchor */
+}
+
+.pdp-reviews__summary {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+}
+
+.pdp-reviews__avg {
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.pdp-reviews__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pdp-review {
+  padding: 16px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: 8px;
+  background: var(--color-bg-surface);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pdp-review__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pdp-review__stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  line-height: 0;
+}
+
+.star--sm {
+  font-size: inherit;
+}
+
+.pdp-review__verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-brand-700);
+  /* Subtle brand-tinted pill — keeps the badge from competing with
+     the star rating but signals trust at a glance. */
+  background: var(--color-brand-50);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.pdp-review__title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+  line-height: 1.4;
+}
+
+.pdp-review__body {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+
+.pdp-review__foot {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+}
+
+.pdp-review__author {
+  font-weight: 500;
+  color: var(--color-text-secondary);
+}
