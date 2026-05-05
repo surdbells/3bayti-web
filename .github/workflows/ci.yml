@@ -115,7 +115,7 @@ jobs:
             echo "ERROR: ItemList JSON-LD missing from category-detail prerender"
             exit 1
           fi
-          NPRODUCTS=$(grep -oE 'class="product-card-name"' "$DET" | wc -l)
+          NPRODUCTS=$(grep -oE 'class="product-card__name"' "$DET" | wc -l)
           if [ "$NPRODUCTS" -lt 1 ]; then
             echo "ERROR: no product cards rendered on /category/abayas-1"
             exit 1
