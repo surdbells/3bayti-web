@@ -51,6 +51,41 @@
      to these tokens. */
   --page-max-width: 1280px;
   --page-padding-x: 24px;
+
+  /* Shadow tokens — "Soft & subtle" surface elevation language.
+     Promoted from inline values to tokens so a future shadow change
+     ripples through every surface in one place. Five surfaces use
+     these: ProductCard, DesignerCard, category tiles, designer
+     skeleton, hero carousel center card. Floating buttons (strip
+     arrows, carousel arrows, dot indicators) use the floating token.
+
+     Replaced the previous "Pronounced shadow" language (Phase 1 W1)
+     with these softer values per W3 round-3 direction. The previous
+     language used 3 layers up to 0.16 opacity at 48px blur — readable
+     but visually heavy, almost competing with the product imagery.
+     The new tokens use 2 layers, max 0.06 opacity at 12px blur — cards
+     still float but feel grounded. Closer to ASOS / COS / H&M
+     editorial than Pinterest. */
+  --shadow-card-resting:
+    0 1px 2px rgba(90, 58, 44, 0.04),
+    0 4px 12px -2px rgba(90, 58, 44, 0.06);
+
+  --shadow-card-hover:
+    0 2px 4px rgba(90, 58, 44, 0.06),
+    0 8px 20px -4px rgba(90, 58, 44, 0.10);
+
+  /* Carousel center card sits proud of the page without overpowering
+     the image. Slightly stronger than card-hover but still soft. */
+  --shadow-carousel-center:
+    0 4px 8px rgba(90, 58, 44, 0.06),
+    0 16px 32px -8px rgba(90, 58, 44, 0.12);
+
+  /* Floating UI elements (arrow buttons, dot indicators) sit on top
+     of cards or images and need a subtle separating shadow regardless
+     of background. */
+  --shadow-floating:
+    0 1px 2px rgba(90, 58, 44, 0.04),
+    0 6px 14px -4px rgba(90, 58, 44, 0.08);
 }
 
 @media (min-width: 1024px) {

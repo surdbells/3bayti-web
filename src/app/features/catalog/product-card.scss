@@ -29,14 +29,13 @@
   color: inherit;
   cursor: pointer;
   position: relative;
-  /* Pronounced shadow at rest — gallery-display level of float. Three
-   * stacked shadows give depth: tight near-shadow + medium ambient
-   * + far diffuse. Tinted brown (var(--color-brand-700) at low alpha)
-   * rather than neutral grey so it harmonises with the cream surface. */
-  box-shadow:
-    0 4px 8px rgba(90, 58, 44, 0.08),
-    0 24px 48px -12px rgba(90, 58, 44, 0.16),
-    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+  /* Soft & subtle shadow at rest — cards float above the canvas with
+   * a whisper of elevation. Tinted brown (rgba(90,58,44, ...)) rather
+   * than neutral grey so it harmonises with the cream surface. See
+   * --shadow-card-resting in src/styles.scss for the source values
+   * and the rationale (Phase 1 W3 round 3 — replaces "Pronounced"
+   * shadow language). */
+  box-shadow: var(--shadow-card-resting);
   transition:
     box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -44,20 +43,20 @@
 
 .product-card:hover,
 .product-card:focus-visible {
-  transform: translateY(-6px);
-  box-shadow:
-    0 8px 16px rgba(90, 58, 44, 0.10),
-    0 40px 72px -16px rgba(90, 58, 44, 0.22),
-    0 16px 28px -8px rgba(90, 58, 44, 0.14);
+  /* Lift reduced from -6px to -3px to match the softer shadow language.
+   * A taller lift with a soft shadow looks like the card is detached
+   * from its shadow; a smaller lift keeps the relationship believable. */
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
   outline: none;
 }
 
 .product-card:focus-visible {
-  /* Keyboard focus: same lift as hover, plus a brand-gold ring. */
+  /* Keyboard focus: same lift as hover, plus a brand-gold ring. The
+   * ring is added on top of the hover shadow rather than replacing it
+   * so focus state still feels consistent with hover. */
   box-shadow:
-    0 8px 16px rgba(90, 58, 44, 0.10),
-    0 40px 72px -16px rgba(90, 58, 44, 0.22),
-    0 16px 28px -8px rgba(90, 58, 44, 0.14),
+    var(--shadow-card-hover),
     0 0 0 2px var(--color-brand-500);
 }
 
@@ -94,10 +93,7 @@
   /* Defeat the lift and image scale for unavailable products. The
    * cursor still says they can't act on it. */
   transform: none;
-  box-shadow:
-    0 4px 8px rgba(90, 58, 44, 0.08),
-    0 24px 48px -12px rgba(90, 58, 44, 0.16),
-    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+  box-shadow: var(--shadow-card-resting);
 }
 
 .product-card.is-out-of-stock:hover .product-card__image-wrap img {

@@ -108,26 +108,27 @@
   }
 }
 
-/* Slot 0 — center, biggest, highlighted, on top. */
+/* Slot 0 — center, biggest, highlighted, on top.
+ * Uses --shadow-carousel-center which is slightly stronger than the
+ * regular card-hover shadow (this is the page hero, after all) but
+ * still soft & subtle compared to the previous "Pronounced" treatment.
+ */
 .hero-carousel__slide.is-center {
   transform: translate(-50%, -50%) scale(1);
   opacity: 1;
   z-index: 3;
   pointer-events: auto;
-  box-shadow:
-    0 12px 24px rgba(90, 58, 44, 0.12),
-    0 48px 80px -16px rgba(90, 58, 44, 0.28),
-    0 24px 40px -8px rgba(90, 58, 44, 0.18);
+  box-shadow: var(--shadow-carousel-center);
 }
 
-/* Slots -1 and +1 — medium, flanking the center. */
+/* Slots -1 and +1 — medium, flanking the center.
+ * Use the regular card-hover shadow so they read as "secondary" cards
+ * next to the carousel-center primary. */
 .hero-carousel__slide.is-near {
   z-index: 2;
   opacity: 0.7;
   pointer-events: auto;
-  box-shadow:
-    0 8px 16px rgba(90, 58, 44, 0.10),
-    0 24px 48px -12px rgba(90, 58, 44, 0.16);
+  box-shadow: var(--shadow-card-hover);
 }
 
 .hero-carousel__slide.is-near[data-slot="-1"] {
@@ -149,14 +150,14 @@
   }
 }
 
-/* Slots -2 and +2 — far edges, small, dimmed. */
+/* Slots -2 and +2 — far edges, small, dimmed.
+ * Use the resting card shadow — these are the most distant cards in
+ * the coverflow stack. */
 .hero-carousel__slide.is-far {
   z-index: 1;
   opacity: 0.35;
   pointer-events: auto;
-  box-shadow:
-    0 4px 8px rgba(90, 58, 44, 0.06),
-    0 12px 24px -8px rgba(90, 58, 44, 0.10);
+  box-shadow: var(--shadow-card-resting);
 }
 
 .hero-carousel__slide.is-far[data-slot="-2"] {
@@ -395,9 +396,8 @@
   padding: 0;
   z-index: 4;
   color: var(--color-brand-700);
-  box-shadow:
-    0 2px 4px rgba(90, 58, 44, 0.08),
-    0 12px 24px -8px rgba(90, 58, 44, 0.16);
+  /* Same floating shadow language as strip arrows. */
+  box-shadow: var(--shadow-floating);
   transition:
     background 0.2s ease,
     transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),

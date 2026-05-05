@@ -284,11 +284,8 @@
      container at desktop. On smaller screens they overflow and the
      user scrolls — natural mobile pattern. */
   width: 140px;
-  /* Same Pronounced shadow language as ProductCard. */
-  box-shadow:
-    0 4px 8px rgba(90, 58, 44, 0.08),
-    0 24px 48px -12px rgba(90, 58, 44, 0.16),
-    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+  /* Same soft & subtle shadow language as ProductCard via shared token. */
+  box-shadow: var(--shadow-card-resting);
   transition:
     box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
     transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
@@ -303,19 +300,15 @@
 
 .category-tile:hover,
 .category-tile:focus-visible {
-  transform: translateY(-4px);
-  box-shadow:
-    0 8px 16px rgba(90, 58, 44, 0.10),
-    0 40px 72px -16px rgba(90, 58, 44, 0.22),
-    0 16px 28px -8px rgba(90, 58, 44, 0.14);
+  /* Lift reduced from -4px to -3px to align with softer shadow. */
+  transform: translateY(-3px);
+  box-shadow: var(--shadow-card-hover);
   outline: none;
 }
 
 .category-tile:focus-visible {
   box-shadow:
-    0 8px 16px rgba(90, 58, 44, 0.10),
-    0 40px 72px -16px rgba(90, 58, 44, 0.22),
-    0 16px 28px -8px rgba(90, 58, 44, 0.14),
+    var(--shadow-card-hover),
     0 0 0 2px var(--color-brand-500);
 }
 
@@ -441,10 +434,7 @@
   padding: 28px 28px 32px;
   min-height: 360px;
   height: 100%;
-  box-shadow:
-    0 4px 8px rgba(90, 58, 44, 0.08),
-    0 24px 48px -12px rgba(90, 58, 44, 0.16),
-    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+  box-shadow: var(--shadow-card-resting);
 }
 
 .designer-skeleton ui-skeleton-shimmer {

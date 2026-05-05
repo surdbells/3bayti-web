@@ -205,10 +205,7 @@
   padding: 14px 14px 20px;
   background: #fdfaf3;
   border-radius: 20px;
-  box-shadow:
-    0 4px 8px rgba(90, 58, 44, 0.08),
-    0 24px 48px -12px rgba(90, 58, 44, 0.16),
-    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+  box-shadow: var(--shadow-card-resting);
 }
 
 .strip__item--skeleton ui-skeleton-shimmer {
@@ -242,11 +239,9 @@
   padding: 0;
   z-index: 3;
   color: var(--color-brand-700);
-  /* Pronounced shadow consistent with cards — these buttons are
-   * floating above the strip too. */
-  box-shadow:
-    0 2px 4px rgba(90, 58, 44, 0.06),
-    0 12px 24px -8px rgba(90, 58, 44, 0.12);
+  /* Floating shadow — same language across strip arrows, carousel
+   * arrows and dot indicators. See --shadow-floating in styles.scss. */
+  box-shadow: var(--shadow-floating);
   transition:
     background 0.2s ease,
     transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
