@@ -80,6 +80,30 @@ export class ProductDetailComponent {
   private platformId = inject(PLATFORM_ID);
 
   /**
+   * True if the API returned 404 for this slug.
+   *
+   * NOTE on field order: this MUST be declared BEFORE `product`
+   * below. TypeScript class fields initialize top-to-bottom, and
+   * `product`'s `toSignal()` subscribes synchronously on creation;
+   * its inner `switchMap` may then call `fetchProduct$()` which
+   * touches `this.notFound.set(...)`. If `notFound` were declared
+   * after `product`, that .set call would throw at construction time
+   * with `Cannot read properties of undefined (reading 'set')` —
+   * surfaced specifically when the client hydrates with a populated
+   * TransferState (the cache-hit path is synchronous, so the .set
+   * fires before the rest of the class fields are initialized).
+   *
+   * SSR prerender doesn't hit this because the cache-miss path is
+   * async (HTTP latency) — by the time tap()/catchError() runs,
+   * `notFound` exists.
+   *
+   * (`loading` below references `notFound` too, but that's safe
+   * because `computed()` is lazy — its body doesn't run at
+   * declaration time, only on first read.)
+   */
+  readonly notFound = signal(false);
+
+  /**
    * Product detail fetched from /v2/products/:slug.
    * Embeds in TransferState for SSR-to-client hand-off.
    */
@@ -96,9 +120,6 @@ export class ProductDetailComponent {
 
   /** True between route change and data arrival. */
   readonly loading = computed(() => this.product() === null && !this.notFound());
-
-  /** True if the API returned 404 for this slug. */
-  readonly notFound = signal(false);
 
   /** Currently-displayed image (clicking thumbnails switches it). */
   readonly activeImageIndex = signal(0);

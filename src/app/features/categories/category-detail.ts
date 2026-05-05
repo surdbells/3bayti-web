@@ -91,6 +91,26 @@ export class CategoryDetailComponent {
   );
 
   /**
+   * True when the category was not found (404 from the API).
+   *
+   * NOTE on field order: this MUST be declared BEFORE `response`
+   * below. TypeScript class fields initialize top-to-bottom, and
+   * `response`'s `toSignal()` subscribes synchronously on creation;
+   * its inner `switchMap` may then call `fetchCategoryDetail$()` which
+   * touches `this.notFound.set(...)`. If `notFound` were declared
+   * after `response`, that .set call would throw at construction time
+   * with `Cannot read properties of undefined (reading 'set')` —
+   * surfaced specifically when the client hydrates with a populated
+   * TransferState (the cache-hit path is synchronous, so the .set
+   * fires before the rest of the class fields are initialized).
+   *
+   * SSR prerender doesn't hit this because the cache-miss path is
+   * async (HTTP latency) — by the time tap()/catchError() runs,
+   * `notFound` exists.
+   */
+  readonly notFound = signal(false);
+
+  /**
    * Category detail + embedded products, fetched once per slug.
    *
    * The fetch result includes both `data` (CategoryDetail) and `meta`
@@ -122,9 +142,6 @@ export class CategoryDetailComponent {
 
   /** Loading state — true between route change and data arrival. */
   readonly loading = computed(() => this.response() === null);
-
-  /** True when the category was not found (404 from the API). */
-  readonly notFound = signal(false);
 
   constructor() {
     /* SEO + JSON-LD: re-apply whenever the response signal changes.
