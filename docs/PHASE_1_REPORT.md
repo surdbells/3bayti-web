@@ -4,6 +4,17 @@
 **Date:** May 4, 2026
 **Live URL:** https://3bayti-web.pages.dev/
 
+> **Update (May 5, 2026):** The deployment model described below
+> ("Cloudflare Pages static hosting — no Workers/runtime SSR")
+> reflects the state at Phase 1 close-out. With the catalogue at
+> 5,000+ products it became infeasible to prerender everything,
+> so the project migrated to **Cloudflare Workers + Static Assets**
+> with runtime SSR for long-tail PDPs. The current production URL
+> is [`https://staging.3bayti.ae/`](https://staging.3bayti.ae/).
+> See `README.md` § Deploy for the current architecture. The rest
+> of this document is preserved as a historical record of the
+> Phase 1 deliverable.
+
 ---
 
 ## Goal recap
