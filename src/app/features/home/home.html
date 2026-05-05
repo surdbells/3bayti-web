@@ -35,10 +35,12 @@
   </section>
 
   <!-- ===========================================================
-       CATEGORIES GRID
-       8 categories, each a cream/Pronounced-shadow card linking to
-       /category/:slug. Same surface language as ProductCard.
-       Server-rendered via TransferState — no flash-of-loading.
+       CATEGORIES ROW
+       Phase 1 W3 round-2: horizontal-scrolling row of square
+       thumbnails with bundled illustration icons. Replaces the
+       previous letter-avatar grid. Categories without an icon
+       (currently just Pyjamas) are filtered out at the data layer
+       — see HomeComponent.fetchCategories$().
        =========================================================== -->
   <section class="home-section home-section--categories" aria-labelledby="categories-title">
     <header class="home-section__header">
@@ -48,7 +50,7 @@
 
     @if (categories(); as cats) {
       @if (cats.length > 0) {
-        <div class="categories-grid" role="list">
+        <div class="categories-row" role="list">
           @for (cat of cats; track cat.id) {
             <a
               [href]="categoryUrl(cat.slug)"
@@ -57,7 +59,19 @@
               [attr.aria-label]="cat.name + ' — ' + cat.product_count + ' products'"
             >
               <div class="category-tile__thumb" aria-hidden="true">
-                <span>{{ initial(cat.name) }}</span>
+                @if (iconFor(cat.slug); as iconUrl) {
+                  <img
+                    [src]="iconUrl"
+                    [alt]="''"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                } @else {
+                  <!-- Icon-less fallback (shouldn't reach here because
+                       fetchCategories$ filters out icon-less categories,
+                       but defensive in case the filter is ever relaxed). -->
+                  <span>{{ initial(cat.name) }}</span>
+                }
               </div>
               <div class="category-tile__meta">
                 <h3 class="category-tile__name">{{ cat.name }}</h3>
@@ -70,10 +84,9 @@
         </div>
       }
     } @else {
-      <!-- Skeleton state during the rare cache-miss case (CSR-only build).
-           Server prerender has data baked in, so this path is rarely hit. -->
-      <div class="categories-grid">
-        @for (i of [0, 1, 2, 3, 4, 5, 6, 7]; track i) {
+      <!-- Skeleton state — 7 placeholder tiles matching the new shape. -->
+      <div class="categories-row">
+        @for (i of [0, 1, 2, 3, 4, 5, 6]; track i) {
           <div class="category-tile category-tile--skeleton">
             <ui-skeleton-shimmer aspectRatio="1 / 1" />
           </div>

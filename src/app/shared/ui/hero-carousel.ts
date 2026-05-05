@@ -7,7 +7,6 @@ import {
   inject,
   PLATFORM_ID,
   OnDestroy,
-  ChangeDetectorRef,
   effect,
 } from '@angular/core';
 import { isPlatformBrowser } from '@angular/common';
@@ -16,42 +15,51 @@ import { SkeletonShimmerComponent } from './skeleton-shimmer';
 import type { Product } from '../../features/catalog/product.model';
 
 /**
- * HeroCarouselComponent — auto-advancing product carousel for the
- * home-page hero band.
+ * HeroCarouselComponent — coverflow product carousel for the home-page
+ * hero band.
  *
- * Usage:
- *   <ui-hero-carousel
- *     [products]="featured()"
- *     [loading]="featured() === null"
- *   />
+ * Visual model:
+ *   5 portrait product cards rendered simultaneously, positioned in
+ *   horizontal slots:
+ *     - Slot -2 (far left, small):    ~140×210, dim
+ *     - Slot -1 (left, medium):       ~200×300
+ *     - Slot  0 (center, large):      ~300×450, highlighted (full
+ *                                     opacity, deeper shadow, bigger
+ *                                     overlay panel)
+ *     - Slot +1 (right, medium):      ~200×300
+ *     - Slot +2 (far right, small):   ~140×210, dim
  *
- * Behavior:
- *   - Renders 1 slide at a time; each slide is a large product image
- *     with an overlay panel showing vendor name + product name + price
- *     + "View product" CTA
- *   - Auto-advances every AUTOPLAY_MS (6000ms by default)
- *   - Pauses on hover/focus to respect the user's attention
- *   - Manual navigation:
- *     - Left/right arrow buttons (desktop only, hover-revealed)
- *     - Dot indicators (clickable, always visible)
- *     - Swipe gesture on mobile (handled via CSS scroll-snap)
- *   - SSR-safe: server renders the first slide only; auto-advance and
- *     scroll machinery boot in ngAfterViewInit on the browser only
+ *   Auto-advances every 6s by rotating which card is at slot 0.
+ *   User can click any non-center card to bring it to center.
+ *
+ *   The aspect ratio of each card is 2:3 (portrait) so product
+ *   images display fully without cropping, addressing the W3 round-2
+ *   feedback that horizontal cinematic slides cropped the products.
+ *
+ * Implementation notes:
+ *   - All 5 cards rendered in DOM continuously; they're positioned
+ *     via transform: translateX/scale rather than scroll
+ *   - Active slot is computed from each card's logical index relative
+ *     to the activeIndex signal: slotOf(i) = i - activeIndex (mod 5)
+ *     wrapped to range [-2, 2]
+ *   - The "wrap" is necessary because we always show 5 cards regardless
+ *     of which one is active — at activeIndex=0, card 4 sits at slot
+ *     -1 (the left medium position) by wrapping
+ *   - CSS transitions handle the animation between slots (no JS animation
+ *     library)
+ *
+ * SSR safety:
+ *   - Server renders with activeIndex=0 (first card centered)
+ *   - Auto-advance only runs in the browser
+ *   - First slide's image gets fetchpriority='high' for LCP
+ *   - prefers-reduced-motion disables auto-advance entirely
  *
  * Accessibility:
- *   - Slides are wrapped in role="group" with aria-roledescription
- *   - Dot indicators have aria-current to indicate the active slide
- *   - "View product" CTA is the primary keyboard target on each slide
- *   - prefers-reduced-motion: disables auto-advance entirely
- *
- * Design notes:
- *   - Slide images use the existing product image URLs at /v2/products
- *     (300x300 cutouts). Phase 1 W3 ships with these; when hero-quality
- *     vendor lifestyle imagery becomes available, swap the image source
- *     in the template — no other changes needed
- *   - Overlay panel uses a subtle gradient + frosted-glass surface so
- *     text reads well against varied product backgrounds (some products
- *     have white backgrounds, some dark — gradient handles both)
+ *   - Each slide has role='group' + aria-roledescription='slide'
+ *   - Active slide gets aria-current
+ *   - Dot indicators are role='tab' with aria-selected
+ *   - Manual nav arrows have descriptive aria-labels
+ *   - Tab order: dots → active slide CTA → next slide CTA, etc.
  */
 @Component({
   selector: 'ui-hero-carousel',
@@ -62,86 +70,112 @@ import type { Product } from '../../features/catalog/product.model';
     <div class="hero-carousel" role="region" aria-label="Featured products">
 
       @if (loading) {
-        <!-- Skeleton state — same outer dimensions as a real slide so
-             layout doesn't shift when content arrives. -->
+        <!-- Skeleton state — center card placeholder, suggests the
+             coverflow shape without trying to mimic the full 5-card
+             arrangement. -->
         <div class="hero-carousel__skeleton">
           <ui-skeleton-shimmer width="100%" height="100%" [rounded]="false" />
         </div>
       } @else if (slides().length > 0) {
 
-        <!-- The slides container. CSS scroll-snap on the X axis gives
-             us free swipe behavior on mobile. JS scrollTo() drives
-             auto-advance and arrow navigation on desktop. -->
         <div
-          #track
-          class="hero-carousel__track"
+          class="hero-carousel__stage"
           (mouseenter)="onPause()"
           (mouseleave)="onResume()"
           (focusin)="onPause()"
           (focusout)="onResume()"
-          (scroll)="onScroll()"
         >
           @for (product of slides(); track product.id; let i = $index) {
             <article
               class="hero-carousel__slide"
+              [class.is-center]="slotOf(i) === 0"
+              [class.is-near]="slotOf(i) === -1 || slotOf(i) === 1"
+              [class.is-far]="slotOf(i) === -2 || slotOf(i) === 2"
+              [attr.data-slot]="slotOf(i)"
+              [attr.aria-hidden]="slotOf(i) !== 0 ? 'true' : 'false'"
+              [attr.aria-current]="slotOf(i) === 0 ? 'true' : null"
               role="group"
-              [attr.aria-label]="'Slide ' + (i + 1) + ' of ' + slides().length"
               [attr.aria-roledescription]="'slide'"
+              [attr.aria-label]="'Slide ' + (i + 1) + ' of ' + slides().length"
             >
-              <a
-                [href]="productUrl(product.slug)"
-                class="hero-carousel__slide-link"
-                [attr.aria-label]="product.name + ' by ' + (product.vendor?.name ?? 'designer')"
-              >
-                @if (product.primary_image; as img) {
-                  <img
-                    [src]="img.url"
-                    [alt]="img.alt ?? product.name"
-                    class="hero-carousel__image"
-                    [attr.loading]="i === 0 ? 'eager' : 'lazy'"
-                    [attr.fetchpriority]="i === 0 ? 'high' : 'auto'"
-                    decoding="async"
-                  />
-                } @else {
-                  <div class="hero-carousel__image-fallback" aria-hidden="true">
-                    <span>{{ initial(product.name) }}</span>
-                  </div>
-                }
-
-                <!-- Overlay panel — frosted glass card pinned to the
-                     bottom-left of the slide on desktop, full-width
-                     on mobile. -->
-                <div class="hero-carousel__overlay">
-                  @if (product.vendor; as vendor) {
-                    <p class="hero-carousel__vendor">{{ vendor.name }}</p>
+              @if (slotOf(i) === 0) {
+                <!-- Center card: full link to product. -->
+                <a
+                  [href]="productUrl(product.slug)"
+                  class="hero-carousel__slide-link"
+                  [attr.aria-label]="product.name + ' by ' + (product.vendor?.name ?? 'designer')"
+                >
+                  @if (product.primary_image; as img) {
+                    <img
+                      [src]="img.url"
+                      [alt]="img.alt ?? product.name"
+                      class="hero-carousel__image"
+                      [attr.loading]="i === 0 ? 'eager' : 'lazy'"
+                      [attr.fetchpriority]="i === 0 ? 'high' : 'auto'"
+                      decoding="async"
+                    />
+                  } @else {
+                    <div class="hero-carousel__image-fallback" aria-hidden="true">
+                      <span>{{ initial(product.name) }}</span>
+                    </div>
                   }
-                  <h3 class="hero-carousel__product-name">{{ product.name }}</h3>
-                  <div class="hero-carousel__divider" aria-hidden="true">
-                    <span class="hero-carousel__divider-line"></span>
-                    <span class="hero-carousel__divider-mark"></span>
-                    <span class="hero-carousel__divider-line"></span>
+
+                  <div class="hero-carousel__overlay">
+                    @if (product.vendor; as vendor) {
+                      <p class="hero-carousel__vendor">{{ vendor.name }}</p>
+                    }
+                    <h3 class="hero-carousel__product-name">{{ product.name }}</h3>
+                    <div class="hero-carousel__divider" aria-hidden="true">
+                      <span class="hero-carousel__divider-line"></span>
+                      <span class="hero-carousel__divider-mark"></span>
+                      <span class="hero-carousel__divider-line"></span>
+                    </div>
+                    <p class="hero-carousel__price">
+                      {{ product.price.currency }} {{ product.price.amount }}
+                    </p>
+                    <span class="hero-carousel__cta">
+                      View product
+                      <svg viewBox="0 0 24 24" aria-hidden="true">
+                        <path d="M5 12h14M13 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
                   </div>
-                  <p class="hero-carousel__price">
-                    {{ product.price.currency }} {{ product.price.amount }}
-                  </p>
-                  <span class="hero-carousel__cta">
-                    View product
-                    <svg viewBox="0 0 24 24" aria-hidden="true">
-                      <path d="M5 12h14M13 5l7 7-7 7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </span>
-                </div>
-              </a>
+                </a>
+              } @else {
+                <!-- Non-center cards: button that brings the slide to center
+                     when clicked. Image only, no overlay (overlay would clutter
+                     the smaller frames). -->
+                <button
+                  type="button"
+                  class="hero-carousel__slide-button"
+                  (click)="goTo(i)"
+                  [attr.aria-label]="'Show ' + product.name + ' by ' + (product.vendor?.name ?? 'designer')"
+                  tabindex="-1"
+                >
+                  @if (product.primary_image; as img) {
+                    <img
+                      [src]="img.url"
+                      [alt]="''"
+                      class="hero-carousel__image"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  } @else {
+                    <div class="hero-carousel__image-fallback" aria-hidden="true">
+                      <span>{{ initial(product.name) }}</span>
+                    </div>
+                  }
+                </button>
+              }
             </article>
           }
         </div>
 
         @if (slides().length > 1) {
-          <!-- Manual nav arrows — desktop hover-revealed via CSS -->
+          <!-- Manual nav arrows — desktop hover-revealed via CSS. -->
           <button
             type="button"
             class="hero-carousel__arrow hero-carousel__arrow--left"
-            [class.is-disabled]="activeIndex() === 0"
             (click)="goPrev()"
             aria-label="Previous slide"
           >
@@ -153,7 +187,6 @@ import type { Product } from '../../features/catalog/product.model';
           <button
             type="button"
             class="hero-carousel__arrow hero-carousel__arrow--right"
-            [class.is-disabled]="activeIndex() === slides().length - 1"
             (click)="goNext()"
             aria-label="Next slide"
           >
@@ -162,7 +195,7 @@ import type { Product } from '../../features/catalog/product.model';
             </svg>
           </button>
 
-          <!-- Dot indicators — always visible, always interactive -->
+          <!-- Dot indicators. -->
           <div class="hero-carousel__dots" role="tablist" aria-label="Choose slide">
             @for (product of slides(); track product.id; let i = $index) {
               <button
@@ -185,9 +218,9 @@ import type { Product } from '../../features/catalog/product.model';
 })
 export class HeroCarouselComponent implements OnDestroy {
   /**
-   * Products to render as carousel slides. We cap to MAX_SLIDES because
-   * having too many slides in a hero hurts UX (users only see the first
-   * few before scrolling past).
+   * Products to render as carousel slides. Capped to MAX_SLIDES because
+   * coverflow only shows 5 at a time meaningfully — more wastes data
+   * fetching for slots the user never sees.
    */
   @Input() set products(value: Product[] | null) {
     this._products.set(value ?? []);
@@ -199,16 +232,16 @@ export class HeroCarouselComponent implements OnDestroy {
   /* ----- Internal state -------------------------------------------- */
 
   private platformId = inject(PLATFORM_ID);
-  private cdr = inject(ChangeDetectorRef);
   private _products = signal<Product[]>([]);
 
-  /** Maximum number of slides shown. More than ~6 is too many for a hero. */
+  /** Coverflow shows exactly 5 slots (-2, -1, 0, +1, +2). More than 5
+   *  products provides no extra value. */
   private readonly MAX_SLIDES = 5;
 
   /** How long each slide stays before auto-advancing. */
   private readonly AUTOPLAY_MS = 6000;
 
-  /** The active slide index (0-based). */
+  /** The active slide index (0-based). Center card is slides()[activeIndex]. */
   readonly activeIndex = signal(0);
 
   /** The visible slides — capped to MAX_SLIDES. */
@@ -221,9 +254,6 @@ export class HeroCarouselComponent implements OnDestroy {
 
   /** True while the carousel is being interacted with (paused). */
   private isPaused = false;
-
-  /** Reference to the scroll track element. */
-  private trackEl: HTMLElement | null = null;
 
   /** Whether the user prefers reduced motion (disables auto-advance). */
   private prefersReducedMotion = false;
@@ -241,10 +271,6 @@ export class HeroCarouselComponent implements OnDestroy {
     });
 
     if (isPlatformBrowser(this.platformId)) {
-      /* Read the prefers-reduced-motion media query. We don't subscribe
-         to changes — if the user toggles their OS setting mid-session,
-         they can refresh. Avoiding a listener keeps this component
-         lighter. */
       this.prefersReducedMotion =
         window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     }
@@ -254,22 +280,47 @@ export class HeroCarouselComponent implements OnDestroy {
     this.stopAutoplay();
   }
 
+  /* ----- Slot computation ------------------------------------------ */
+
+  /**
+   * Compute which slot a slide should occupy given its index and the
+   * current active index. Returns -2, -1, 0, 1, or 2.
+   *
+   * The slot is computed by taking (i - activeIndex) modulo total slides,
+   * then wrapping the result into the range [-2, 2]. This means at
+   * activeIndex=0 with 5 total slides:
+   *   slide 0 → slot 0  (center)
+   *   slide 1 → slot 1  (right medium)
+   *   slide 2 → slot 2  (far right)
+   *   slide 3 → slot -2 (far left)  — wrapped from slot 3 = -2
+   *   slide 4 → slot -1 (left medium) — wrapped from slot 4 = -1
+   */
+  slotOf(i: number): number {
+    const total = this.slides().length;
+    if (total === 0) return 0;
+    let slot = i - this.activeIndex();
+    /* Wrap: e.g. with 5 slides, slot 3 → -2, slot 4 → -1. */
+    const half = Math.floor(total / 2);
+    if (slot > half) slot -= total;
+    if (slot < -half) slot += total;
+    return slot;
+  }
+
   /* ----- Template event handlers ----------------------------------- */
 
-  /** Snap to the previous slide; clamp at 0 (no wraparound). */
+  /** Move active slide back by 1; wraps at the start (so endless rotation). */
   goPrev(): void {
-    const next = Math.max(0, this.activeIndex() - 1);
+    const total = this.slides().length;
+    if (total === 0) return;
+    const next = (this.activeIndex() - 1 + total) % total;
     this.goTo(next);
   }
 
-  /** Snap to the next slide; clamp at last index (no wraparound).
-   *
-   *  Wraparound is intentionally NOT supported. Hero carousels with
-   *  wraparound feel "infinite" but lose the user's sense of progress
-   *  through the curated set. With 5 slides max, hitting the end and
-   *  showing arrows-disabled is fine UX. */
+  /** Move active slide forward by 1; wraps at the end. */
   goNext(): void {
-    const next = Math.min(this.slides().length - 1, this.activeIndex() + 1);
+    const total = this.slides().length;
+    if (total === 0) return;
+    const next = (this.activeIndex() + 1) % total;
     this.goTo(next);
   }
 
@@ -277,9 +328,6 @@ export class HeroCarouselComponent implements OnDestroy {
   goTo(index: number): void {
     if (index < 0 || index >= this.slides().length) return;
     this.activeIndex.set(index);
-    this.scrollToIndex(index);
-    /* User initiated the jump → reset the autoplay timer so they get
-       the full 6s on the slide they chose. */
     this.restartAutoplay();
   }
 
@@ -293,27 +341,6 @@ export class HeroCarouselComponent implements OnDestroy {
   onResume(): void {
     this.isPaused = false;
     this.startAutoplay();
-  }
-
-  /** User scrolled the track manually (swipe). Sync activeIndex from
-   *  the actual scroll position. */
-  onScroll(): void {
-    if (!this.trackEl) {
-      /* Lazy-pick the track ref. We can't use ViewChild because Angular
-         SSR doesn't render the track on the server, so the ref would
-         be undefined during SSR. Browser-side, the first scroll event
-         finds the element. */
-      const el = document.querySelector('.hero-carousel__track');
-      if (el instanceof HTMLElement) this.trackEl = el;
-    }
-    if (!this.trackEl) return;
-
-    const slideWidth = this.trackEl.clientWidth;
-    /* Round to find the slide that's now most-visible. */
-    const newIndex = Math.round(this.trackEl.scrollLeft / slideWidth);
-    if (newIndex !== this.activeIndex() && newIndex >= 0 && newIndex < this.slides().length) {
-      this.activeIndex.set(newIndex);
-    }
   }
 
   /* ----- Helpers --------------------------------------------------- */
@@ -335,15 +362,7 @@ export class HeroCarouselComponent implements OnDestroy {
     if (!isPlatformBrowser(this.platformId)) return;
 
     this.autoplayTimer = setInterval(() => {
-      const cur = this.activeIndex();
-      const next = cur < this.slides().length - 1 ? cur + 1 : 0;
-      this.activeIndex.set(next);
-      this.scrollToIndex(next);
-      /* Trigger CD so the active dot updates without waiting for the
-         next zone tick. activeIndex is a signal so this should be
-         automatic; calling markForCheck is belt-and-braces in case
-         the strip is in a deeply OnPush parent. */
-      this.cdr.markForCheck();
+      this.goNext();
     }, this.AUTOPLAY_MS);
   }
 
@@ -357,21 +376,5 @@ export class HeroCarouselComponent implements OnDestroy {
   private restartAutoplay(): void {
     this.stopAutoplay();
     this.startAutoplay();
-  }
-
-  /** Scroll the track so the slide at index is fully in view. */
-  private scrollToIndex(index: number): void {
-    if (!isPlatformBrowser(this.platformId)) return;
-    if (!this.trackEl) {
-      const el = document.querySelector('.hero-carousel__track');
-      if (el instanceof HTMLElement) this.trackEl = el;
-    }
-    if (!this.trackEl) return;
-
-    const slideWidth = this.trackEl.clientWidth;
-    this.trackEl.scrollTo({
-      left: slideWidth * index,
-      behavior: 'smooth',
-    });
   }
 }

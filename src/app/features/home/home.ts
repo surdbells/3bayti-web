@@ -20,6 +20,7 @@ import { ProductStripComponent } from '../../shared/ui/product-strip';
 import { HeroCarouselComponent } from '../../shared/ui/hero-carousel';
 import { DesignerCardComponent } from '../catalog/designer-card';
 import type { Category } from '../categories/category.model';
+import { categoryIconUrl, categoryHasIcon } from '../categories/category-icons';
 import { HomeDataService } from './home-data.service';
 
 /**
@@ -142,9 +143,14 @@ export class HomeComponent {
     return `/category/${slug}`;
   }
 
-  /** First letter of category name, uppercased, for the letter avatar. */
+  /** First letter of category name, uppercased, for the letter avatar fallback. */
   initial(name: string): string {
     return (name?.[0] || '?').toUpperCase();
+  }
+
+  /** Resolve the icon URL for a category. Returns null for unmapped slugs. */
+  iconFor(slug: string): string | null {
+    return categoryIconUrl(slug);
   }
 
   /* ----- Internal: TransferState-cached categories fetch ---------------- */
@@ -161,6 +167,10 @@ export class HomeComponent {
           this.state.set(this.KEY_CATEGORIES, categories);
         }
       }),
+      /* Filter out categories without bundled icons (currently just
+         pyjamas — see category-icons.ts). The home-page row only shows
+         visually-coherent tiles; /category index still lists everything. */
+      map(cats => cats.filter(c => categoryHasIcon(c.slug))),
       /* Sort by product count DESC so the most-stocked categories
          appear first. Same sort as /category index uses. */
       map(cats => [...cats].sort((a, b) => b.product_count - a.product_count)),

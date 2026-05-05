@@ -180,14 +180,17 @@
 
 @media (min-width: 1024px) {
   .strip__item {
-    /* Desktop: ~4 cards with right peek. Container caps at 1280px so
-     * for screens ≥1376px (1280 + 96px gutters) we want to use the
-     * container width as the basis, not viewport. min() picks the
-     * smaller of vw-based and container-based — gives sensible card
-     * widths at all desktop sizes including ultra-wide displays. */
-    width: calc((min(100vw, 1376px) - 96px - 84px) / 4);
-    max-width: 320px;
-    min-width: 240px;
+    /* Desktop: ~3 cards visible with right peek (W3 round-2 — was 4
+     * per row, felt cramped). Now each card is meaningfully larger,
+     * giving products more "showcase" feel.
+     *
+     * Container caps at 1280px so for screens ≥1376px we use container
+     * width as the basis. min() picks the smaller of viewport and
+     * container so cards size sensibly at all desktop sizes including
+     * ultra-wide displays. 3 cards + 2 gaps × 28px = 56px gap budget. */
+    width: calc((min(100vw, 1376px) - 96px - 56px) / 3);
+    max-width: 420px;
+    min-width: 280px;
   }
 }
 
