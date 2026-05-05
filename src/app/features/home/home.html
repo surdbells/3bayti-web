@@ -2,17 +2,20 @@
 
   <!-- ===========================================================
        HERO BAND
-       Phase 1 W3: compressed text hero followed by a product
-       carousel as part of the same band. The text-only hero
-       (W2) felt thin for a marketplace home page; pairing it
-       with a visual carousel gives the hero band more presence
-       and lets a curated product set speak directly above the
-       fold.
+       Phase 1 W3 round-3: hero is now carousel-only. The static
+       eyebrow/H1/lede block was removed in ed3896f (May 2026); the
+       .hero band kept for its layout role (vertical padding, full-
+       bleed wrapper around the carousel). The carousel itself
+       declares role="region" + aria-label="Featured products" inside
+       HeroCarouselComponent, so this <section> doesn't need an
+       independent landmark — but keeping aria-label here gives
+       screen readers a meaningful name for the band wrapper if a
+       future change re-introduces text content above the carousel.
        =========================================================== -->
-  <section class="hero" aria-labelledby="hero-title">
-    <!-- Product carousel — sits inside the same hero band so the
-         text + carousel read as one composition. Slides come from
-         /v2/products?sort=featured (the same data feeding the
+  <section class="hero" aria-label="Featured products">
+    <!-- Product carousel — sits inside the hero band so the carousel
+         + future text content read as one composition. Slides come
+         from /v2/products?sort=featured (the same data feeding the
          "This week's edit" strip below). -->
     <div class="hero__carousel-wrapper">
       <ui-hero-carousel

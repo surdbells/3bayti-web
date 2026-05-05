@@ -72,17 +72,37 @@ jobs:
         # content (not an empty <app-root>). If SSR breaks silently in
         # the build, this catches it — without this step, Cloudflare
         # would happily deploy an empty shell.
+        #
+        # Marker rationale (Phase 1 W3 round-3): we used to assert on
+        # the literal hero copy ("Premium abayas..."), but that text
+        # was removed in ed3896f when the home transitioned to a
+        # carousel-only hero. Editorial copy is the worst kind of CI
+        # marker — it changes whenever a non-engineering decision says
+        # so. We now check for stable BEM markers that come from
+        # component templates, not editorial copy:
+        #
+        #   - site-footer__brand-name: every page has the footer; this
+        #     proves the global app shell rendered, not just <app-root>.
+        #   - hero-carousel__slide: confirms the home page's primary
+        #     content (the carousel) actually rendered with slide data.
+        #     If /v2/products?sort=featured was unreachable at build
+        #     time, this would catch it.
         run: |
           INDEX=dist/3bayti-web/browser/index.html
           if [ ! -f "$INDEX" ]; then
             echo "ERROR: $INDEX not found"
             exit 1
           fi
-          if ! grep -q "Premium abayas" "$INDEX"; then
-            echo "ERROR: home page hero text missing — SSR may have failed"
+          if ! grep -q "site-footer__brand-name" "$INDEX"; then
+            echo "ERROR: footer marker missing — global app shell may not have rendered"
             exit 1
           fi
-          echo "✓ Home page prerendered ($(wc -c < $INDEX) bytes)"
+          NSLIDES=$(grep -oE 'hero-carousel__slide\b' "$INDEX" | wc -l)
+          if [ "$NSLIDES" -lt 1 ]; then
+            echo "ERROR: home page carousel rendered 0 slides — /v2/products may have been unreachable at build time"
+            exit 1
+          fi
+          echo "✓ Home page prerendered ($(wc -c < $INDEX) bytes, $NSLIDES carousel slide markers)"
 
           CAT=dist/3bayti-web/browser/category/index.html
           if [ ! -f "$CAT" ]; then
