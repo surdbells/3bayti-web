@@ -35,24 +35,31 @@
 
 /* =====================================================================
    HERO BAND
+   Phase 1 W3: text + product carousel composition. Text portion has
+   compressed vertical padding (the carousel below is the visual hero
+   now). Drops the app CTA + ornament from W2 — those felt redundant
+   when paired with the carousel's own product CTAs.
    ===================================================================== */
 
 .hero {
-  /* Hero sits on the brand canvas with no card chrome. The whole page
-   * canvas is brand bg-canvas; hero just commands the visual centre. */
-  padding: 80px 24px 24px;
+  padding: 48px var(--page-padding-x) 0;
   text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
 }
 
 @media (min-width: 768px) {
   .hero {
-    padding: 120px 48px 48px;
+    padding-top: 64px;
+    gap: 40px;
   }
 }
 
 @media (min-width: 1024px) {
   .hero {
-    padding: 160px 48px 64px;
+    padding-top: 80px;
+    gap: 48px;
   }
 }
 
@@ -61,7 +68,7 @@
   margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 18px;
   align-items: center;
 }
 
@@ -78,24 +85,22 @@
 .hero__title {
   font-family: 'Playfair Display', Georgia, serif;
   font-weight: 500;
-  font-size: 36px;
+  font-size: 32px;
   line-height: 1.15;
   letter-spacing: -0.02em;
   color: var(--color-brand-700);
   margin: 0;
-  /* Slight italic accent on the em-dash phrase via CSS &mdash; we keep
-   * the whole title roman but rely on the em-dash for visual rhythm. */
 }
 
 @media (min-width: 640px) {
   .hero__title {
-    font-size: 48px;
+    font-size: 40px;
   }
 }
 
 @media (min-width: 1024px) {
   .hero__title {
-    font-size: 64px;
+    font-size: 52px;
     line-height: 1.05;
   }
 }
@@ -104,69 +109,44 @@
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-style: italic;
   font-weight: 400;
-  font-size: 19px;
+  font-size: 18px;
   line-height: 1.5;
   color: var(--color-text-secondary);
   margin: 0;
-  max-width: 580px;
+  max-width: 560px;
 }
 
 @media (min-width: 1024px) {
   .hero__lede {
-    font-size: 22px;
+    font-size: 20px;
   }
 }
 
-.hero__app-cta {
-  font-family: 'Inter', system-ui, sans-serif;
-  font-size: 13px;
-  color: var(--color-text-tertiary);
-  margin: 0;
-  margin-top: 8px;
-}
-
-/* Gold ornament — small visual punctuation under the hero. Same
- * dot-flanked-by-lines motif as ProductCard's divider, but wider. */
-.hero__ornament {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-  width: 80px;
-}
-
-.hero__ornament-line {
-  flex: 1;
-  height: 1px;
-  background: var(--color-brand-300);
-  opacity: 0.6;
-}
-
-.hero__ornament-mark {
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--color-brand-400);
+/* Carousel wrapper sits inside the hero band and respects the page
+   gutter so its left/right edges align with categories/strips/designers
+   below. */
+.hero__carousel-wrapper {
+  width: 100%;
+  max-width: var(--page-max-width);
+  margin: 0 auto;
 }
 
 /* =====================================================================
    GENERIC HOME-SECTION HEADER (shared by Categories + Designer Spotlight)
    ProductStrip has its own header pattern — these two surfaces use a
    slightly different shape because they're not horizontally scrolling.
+
+   All sections use the global --page-padding-x / --page-max-width tokens
+   so left/right alignment is identical across hero, categories, strips,
+   designers, and footer. Single source of truth for page gutter.
    ===================================================================== */
 
 .home-section {
-  padding: 0 24px;
-}
-
-@media (min-width: 1024px) {
-  .home-section {
-    padding: 0 48px;
-  }
+  padding: 0 var(--page-padding-x);
 }
 
 .home-section__header {
-  max-width: 1280px;
+  max-width: var(--page-max-width);
   margin: 0 auto 32px;
   display: flex;
   align-items: flex-end;
@@ -246,7 +226,7 @@
    ===================================================================== */
 
 .categories-grid {
-  max-width: 1280px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
   display: grid;
   gap: 20px;
@@ -378,36 +358,42 @@
    ===================================================================== */
 
 .designers-grid {
-  max-width: 1280px;
+  max-width: var(--page-max-width);
   margin: 0 auto;
   display: grid;
   gap: 24px;
   grid-template-columns: 1fr;
+  /* Equal heights enforced by grid's default align-items: stretch.
+     The DesignerCard's internal flex column with margin-top:auto on the
+     products row keeps internal content aligned even when descriptions
+     vary in length. */
+  align-items: stretch;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .designers-grid {
+    /* 2-up at all desktop+ widths per Phase 1 W3 direction. The
+       previous 4-up layout made cards too small (≈300px wide) on
+       1280px+ screens; 2-up gives each card ~620px to work with —
+       enough room for the redesigned horizontal product row. */
     grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (min-width: 1280px) {
-  .designers-grid {
-    grid-template-columns: repeat(4, 1fr);
-    gap: 28px;
+    gap: 32px;
   }
 }
 
 /* Designer skeleton — matches DesignerCard's outer dimensions so the
- * layout doesn't shift when real content swaps in. */
+ * layout doesn't shift when real content swaps in. Updated for W3
+ * redesign (was 420px min-height with 2x2 mosaic; now 360px with
+ * horizontal product row). */
 .designer-skeleton {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 16px;
   background: #fdfaf3;
   border-radius: 20px;
-  padding: 20px 20px 24px;
-  min-height: 420px;
+  padding: 28px 28px 32px;
+  min-height: 360px;
+  height: 100%;
   box-shadow:
     0 4px 8px rgba(90, 58, 44, 0.08),
     0 24px 48px -12px rgba(90, 58, 44, 0.16),

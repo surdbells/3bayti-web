@@ -1,0 +1,451 @@
+/* HeroCarouselComponent — large auto-advancing product carousel
+ * ===============================================================
+ * Cinematic full-width slide format. Each slide is a single product
+ * image with a frosted-glass overlay panel showing vendor + product
+ * + price + CTA.
+ *
+ * Layout philosophy:
+ *   - Track uses CSS scroll-snap-x mandatory for free swipe behavior
+ *     on mobile + JS-driven smooth scroll for desktop arrow nav
+ *   - Each slide fills the carousel viewport (1 slide per scroll snap)
+ *   - Overlay panel pinned bottom-left on desktop (so the product
+ *     image is the visual hero) and full-width band on mobile
+ *   - Aspect ratio 16:9 on desktop (wide cinematic), 4:5 on mobile
+ *     (taller, more product-centric for scrolling phones)
+ *
+ * SSR safety:
+ *   - Server emits all slides in the track DOM but only the first is
+ *     visible due to scroll position 0 + overflow:hidden on the
+ *     viewport. Auto-advance JS doesn't run server-side so SSR is
+ *     deterministic
+ *   - The first slide's image gets fetchpriority="high" so it doesn't
+ *     wait for the rest of the page to load (LCP optimization)
+ */
+
+.hero-carousel {
+  /* Outer container is bounded by the parent .hero band in home.scss.
+     The carousel itself fills its parent. */
+  position: relative;
+  width: 100%;
+  /* Aspect-ratio drives the height — image takes whatever the carousel
+     gets, no fixed pixel heights. Tall on mobile so product fills the
+     screen; cinematic wide on desktop so it feels like a magazine
+     spread. */
+  aspect-ratio: 4 / 5;
+  border-radius: 20px;
+  overflow: hidden;
+  /* Same Pronounced shadow language as ProductCard, slightly less
+     aggressive because the carousel is the page hero — too much shadow
+     reads as "lifted card" and we want it to feel like a flat editorial
+     panel. */
+  box-shadow:
+    0 8px 16px rgba(90, 58, 44, 0.08),
+    0 32px 56px -16px rgba(90, 58, 44, 0.18);
+  background: var(--color-bg-muted);
+}
+
+@media (min-width: 768px) {
+  .hero-carousel {
+    aspect-ratio: 16 / 9;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-carousel {
+    /* Slightly less wide than 16:9 at the largest sizes — a true 16:9
+       at 1280px container is 720px tall, which dominates the viewport.
+       21:9 cinematic is more proportionate. */
+    aspect-ratio: 21 / 9;
+    max-height: 600px;
+  }
+}
+
+/* Skeleton state — fills the entire carousel area. */
+.hero-carousel__skeleton {
+  width: 100%;
+  height: 100%;
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+/* ----- Track (the scrolling slide container) ----------------------- */
+
+.hero-carousel__track {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  /* Hide scrollbar — desktop uses arrows + dots, mobile uses swipe. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hero-carousel__track::-webkit-scrollbar {
+  display: none;
+}
+
+/* ----- Individual slide -------------------------------------------- */
+
+.hero-carousel__slide {
+  flex: 0 0 100%;
+  width: 100%;
+  height: 100%;
+  scroll-snap-align: start;
+  position: relative;
+}
+
+.hero-carousel__slide-link {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  text-decoration: none;
+  color: inherit;
+  /* Subtle gradient overlay on the image so the bottom (where the
+     overlay panel sits) has good contrast even when the product
+     photograph has light tones at the bottom. */
+  background:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      transparent 50%,
+      rgba(46, 36, 28, 0.18) 80%,
+      rgba(46, 36, 28, 0.32) 100%
+    );
+}
+
+.hero-carousel__slide-link:focus-visible {
+  outline: 3px solid var(--color-brand-500);
+  outline-offset: -3px;
+}
+
+.hero-carousel__image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  /* Cover so the product fills the slide regardless of source aspect.
+     Most product images are 1:1 or slightly portrait — they'll center-
+     crop into the cinematic format gracefully. */
+  object-fit: cover;
+  display: block;
+  /* The slide-link's gradient overlay sits on top of the image via
+     stacking context — we put the image behind. */
+  z-index: 0;
+  /* Subtle parallax-style movement on hover for engagement. Disabled
+     on touch devices (pointer:coarse) since hover doesn't apply. */
+  transition: transform 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-carousel__slide-link:hover .hero-carousel__image {
+    transform: scale(1.03);
+  }
+}
+
+.hero-carousel__image-fallback {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: var(--color-brand-100);
+  color: var(--color-brand-700);
+}
+
+.hero-carousel__image-fallback span {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 96px;
+  line-height: 1;
+}
+
+/* ----- Overlay panel (frosted-glass copy block) -------------------- */
+
+.hero-carousel__overlay {
+  position: absolute;
+  z-index: 2;
+  /* Mobile: full-width band pinned to bottom of slide */
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  padding: 20px 24px;
+  border-radius: 16px;
+  background: rgba(253, 250, 243, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 0.5px solid var(--color-brand-200);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: center;
+  align-items: center;
+}
+
+@media (min-width: 768px) {
+  .hero-carousel__overlay {
+    /* Desktop: card pinned to the bottom-left, leaves the product
+       image as the visual hero. */
+    left: 32px;
+    right: auto;
+    bottom: 32px;
+    max-width: 380px;
+    padding: 24px 28px 28px;
+    text-align: left;
+    align-items: flex-start;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-carousel__overlay {
+    left: 48px;
+    bottom: 48px;
+    max-width: 420px;
+    padding: 28px 32px 32px;
+  }
+}
+
+.hero-carousel__vendor {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 16px;
+  color: var(--color-brand-500);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+@media (min-width: 1024px) {
+  .hero-carousel__vendor {
+    font-size: 17px;
+  }
+}
+
+.hero-carousel__product-name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: 22px;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--color-brand-700);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .hero-carousel__product-name {
+    font-size: 28px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-carousel__product-name {
+    font-size: 32px;
+  }
+}
+
+.hero-carousel__divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 4px 0;
+  width: 64px;
+  align-self: center;
+}
+
+@media (min-width: 768px) {
+  .hero-carousel__divider {
+    align-self: flex-start;
+  }
+}
+
+.hero-carousel__divider-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-brand-300);
+  opacity: 0.6;
+}
+
+.hero-carousel__divider-mark {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--color-brand-400);
+}
+
+.hero-carousel__price {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--color-brand-700);
+  margin: 0 0 8px;
+  letter-spacing: 0.01em;
+}
+
+@media (min-width: 1024px) {
+  .hero-carousel__price {
+    font-size: 18px;
+  }
+}
+
+.hero-carousel__cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-brand-700);
+  margin-top: 4px;
+  transition: gap 0.3s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+}
+
+.hero-carousel__slide-link:hover .hero-carousel__cta {
+  gap: 10px;
+  color: var(--color-brand-500);
+}
+
+.hero-carousel__cta svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* ----- Manual nav arrows (desktop only) ---------------------------- */
+
+.hero-carousel__arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border: 0.5px solid var(--color-brand-200);
+  background: rgba(253, 250, 243, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-radius: 50%;
+  display: none;
+  place-items: center;
+  cursor: pointer;
+  padding: 0;
+  z-index: 3;
+  color: var(--color-brand-700);
+  box-shadow:
+    0 2px 4px rgba(90, 58, 44, 0.08),
+    0 12px 24px -8px rgba(90, 58, 44, 0.16);
+  transition:
+    background 0.2s ease,
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease;
+  /* Start invisible; appear on carousel hover so the arrows aren't
+     visual noise during passive viewing. */
+  opacity: 0;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hero-carousel__arrow {
+    display: grid;
+  }
+
+  .hero-carousel:hover .hero-carousel__arrow,
+  .hero-carousel__arrow:focus-visible {
+    opacity: 1;
+  }
+}
+
+.hero-carousel__arrow:hover {
+  background: var(--color-brand-50);
+  transform: translateY(-50%) scale(1.06);
+}
+
+.hero-carousel__arrow:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 2px;
+}
+
+.hero-carousel__arrow.is-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.hero-carousel__arrow svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-carousel__arrow--left {
+  left: 24px;
+}
+
+.hero-carousel__arrow--right {
+  right: 24px;
+}
+
+/* ----- Dot indicators (always visible, always interactive) --------- */
+
+.hero-carousel__dots {
+  position: absolute;
+  z-index: 3;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(253, 250, 243, 0.6);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+@media (min-width: 768px) {
+  .hero-carousel__dots {
+    /* On desktop, dots sit further from the bottom edge to clear the
+       overlay panel which grows taller there. */
+    bottom: auto;
+    top: 24px;
+    right: 32px;
+    left: auto;
+    transform: none;
+  }
+}
+
+@media (min-width: 1280px) {
+  .hero-carousel__dots {
+    top: 32px;
+    right: 48px;
+  }
+}
+
+.hero-carousel__dot {
+  width: 8px;
+  height: 8px;
+  padding: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-brand-300);
+  cursor: pointer;
+  transition:
+    background 0.3s ease,
+    width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.hero-carousel__dot:hover {
+  background: var(--color-brand-500);
+}
+
+.hero-carousel__dot:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 3px;
+}
+
+.hero-carousel__dot.is-active {
+  background: var(--color-brand-700);
+  /* Active dot becomes a small pill — visual indicator of progress
+     through the set. */
+  width: 24px;
+  border-radius: 4px;
+}

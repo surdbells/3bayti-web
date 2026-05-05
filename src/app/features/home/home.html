@@ -2,9 +2,12 @@
 
   <!-- ===========================================================
        HERO BAND
-       Refreshed typography (Cormorant eyebrow, Playfair display,
-       Inter body) over the existing brand canvas. Copy unchanged
-       per Phase 1 W2 direction.
+       Phase 1 W3: compressed text hero followed by a product
+       carousel as part of the same band. The text-only hero
+       (W2) felt thin for a marketplace home page; pairing it
+       with a visual carousel gives the hero band more presence
+       and lets a curated product set speak directly above the
+       fold.
        =========================================================== -->
   <section class="hero" aria-labelledby="hero-title">
     <div class="hero__inner">
@@ -17,15 +20,17 @@
         independent UAE designers. Discover styles, get made-to-measure
         fits, and have them delivered to your door.
       </p>
-      <p class="hero__app-cta">
-        Already shopping with us? Get the app on your phone for the full
-        experience.
-      </p>
-      <div class="hero__ornament" aria-hidden="true">
-        <span class="hero__ornament-line"></span>
-        <span class="hero__ornament-mark"></span>
-        <span class="hero__ornament-line"></span>
-      </div>
+    </div>
+
+    <!-- Product carousel — sits inside the same hero band so the
+         text + carousel read as one composition. Slides come from
+         /v2/products?sort=featured (the same data feeding the
+         "This week's edit" strip below). -->
+    <div class="hero__carousel-wrapper">
+      <ui-hero-carousel
+        [products]="featured() ?? []"
+        [loading]="featured() === null"
+      />
     </div>
   </section>
 

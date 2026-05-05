@@ -17,6 +17,7 @@ import { organizationSchema, websiteSchema } from '../../core/seo/schema.helpers
 import { environment } from '../../../environments/environment';
 import { SkeletonShimmerComponent } from '../../shared/ui/skeleton-shimmer';
 import { ProductStripComponent } from '../../shared/ui/product-strip';
+import { HeroCarouselComponent } from '../../shared/ui/hero-carousel';
 import { DesignerCardComponent } from '../catalog/designer-card';
 import type { Category } from '../categories/category.model';
 import { HomeDataService } from './home-data.service';
@@ -53,6 +54,7 @@ import { HomeDataService } from './home-data.service';
   imports: [
     SkeletonShimmerComponent,
     ProductStripComponent,
+    HeroCarouselComponent,
     DesignerCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,

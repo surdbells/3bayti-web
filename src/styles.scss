@@ -34,6 +34,32 @@
 
   --color-border-subtle:  rgba(46, 36, 28, 0.08);
   --color-border-default: rgba(46, 36, 28, 0.16);
+
+  /* Page layout tokens — used to align every section's content edge to
+     the same container bounds. Before these existed, sections used a mix
+     of max-widths and paddings, causing strips to bleed to viewport
+     edges while categories/designers stopped at 1280px (the "uneven
+     content width" issue from Phase 1 W3 review). One source of truth
+     for the page gutter.
+
+     Used by:
+       - .home-section (hero/categories/designers)
+       - ProductStrip (the track is now bounded too)
+       - SiteFooter
+     Internal layouts can still use their own narrower max-width
+     (e.g. hero text column at 720px) but their outer wrapper aligns
+     to these tokens. */
+  --page-max-width: 1280px;
+  --page-padding-x: 24px;
+}
+
+@media (min-width: 1024px) {
+  :root {
+    /* On desktop the gutter widens for visual breathing room. The
+       768-1024 tablet range stays at 24px for design simplicity —
+       jumping to 32px there created an awkward middle state. */
+    --page-padding-x: 48px;
+  }
 }
 
 html, body {

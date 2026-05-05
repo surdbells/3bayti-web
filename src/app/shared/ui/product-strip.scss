@@ -23,6 +23,13 @@
 .strip {
   margin: 0;
   padding: 0;
+  /* The outer .strip is bounded to the page container — same alignment
+     as categories/designers/footer. Internal scroll happens within
+     this bounded viewport, so the leftmost card sits at the same
+     x-position as the categories grid above and the designers grid
+     below. Achieves the visual alignment the W3 review flagged. */
+  max-width: var(--page-max-width);
+  margin: 0 auto;
 }
 
 /* ----- Header (heading + view-all link) ---------------------------- */
@@ -33,12 +40,13 @@
   justify-content: space-between;
   gap: 24px;
   margin-bottom: 32px;
-  padding: 0 24px;
+  /* Header padding aligns the strip's heading row with categories and
+     designer section headers — same gutter as the rest of the page. */
+  padding: 0 var(--page-padding-x);
 }
 
 @media (min-width: 1024px) {
   .strip__header {
-    padding: 0 48px;
     margin-bottom: 40px;
   }
 }
@@ -122,10 +130,12 @@
   overflow-x: auto;
   overflow-y: visible;
   /* Vertical breathing room so the card's lift-on-hover doesn't get
-   * clipped at the top/bottom of the scroll area. */
-  padding: 12px 24px 32px;
+   * clipped at the top/bottom of the scroll area. Horizontal padding
+   * aligns the leftmost card with the page gutter so it lines up with
+   * everything else (categories tiles, designers cards, footer). */
+  padding: 12px var(--page-padding-x) 32px;
   scroll-snap-type: x mandatory;
-  scroll-padding-left: 24px;
+  scroll-padding-left: var(--page-padding-x);
   scroll-behavior: smooth;
   /* Hide the native scrollbar — desktop uses arrow buttons, mobile
    * uses touch. The scrollbar would clutter the premium aesthetic. */
@@ -139,8 +149,7 @@
 
 @media (min-width: 1024px) {
   .strip__track {
-    padding: 12px 48px 40px;
-    scroll-padding-left: 48px;
+    padding-bottom: 40px;
     gap: 28px;
   }
 }
@@ -150,16 +159,20 @@
 .strip__item {
   flex: 0 0 auto;
   scroll-snap-align: start;
-  /* Mobile default: ~1.5 cards in view (peek on right invites swipe).
-   * Below assumes 16px outer padding × 2 + 1.5 cards + 0.5×24px gap,
-   * but easier to just hardcode a width that "feels right" in context. */
+  /* Mobile default: ~1.5 cards visible, peek on right invites swipe.
+   * 70vw - 24px is roughly "two-thirds of viewport, minus half the
+   * gutter, capped at 280px so it doesn't grow weirdly large on
+   * tablets in portrait." Container is full-width here (mobile only
+   * has 24px gutters), so vw-based sizing still works. */
   width: calc(70vw - 24px);
   max-width: 280px;
 }
 
 @media (min-width: 640px) {
   .strip__item {
-    /* Tablet: ~3 cards visible. */
+    /* Tablet: ~3 cards visible. Same calculation as before — container
+     * width at 640-1024px is essentially viewport-width, gutters are
+     * 24px, so the card width math is unchanged. */
     width: calc((100vw - 48px - 48px) / 3);
     max-width: 280px;
   }
@@ -167,10 +180,12 @@
 
 @media (min-width: 1024px) {
   .strip__item {
-    /* Desktop: ~4 cards with right peek.
-     * Container width ≈ 100vw, padding 96px, 3 gaps × 28px = 84px,
-     * so each card ≈ (100vw - 180px) / 4 — clamped to 280px max. */
-    width: calc((100vw - 96px - 84px) / 4);
+    /* Desktop: ~4 cards with right peek. Container caps at 1280px so
+     * for screens ≥1376px (1280 + 96px gutters) we want to use the
+     * container width as the basis, not viewport. min() picks the
+     * smaller of vw-based and container-based — gives sensible card
+     * widths at all desktop sizes including ultra-wide displays. */
+    width: calc((min(100vw, 1376px) - 96px - 84px) / 4);
     max-width: 320px;
     min-width: 240px;
   }
@@ -265,23 +280,11 @@
 }
 
 .strip__arrow--left {
-  /* Position so the button overlaps the right edge of the section
-   * padding, peeking over the leftmost card. */
-  left: 12px;
-}
-
-@media (min-width: 1024px) {
-  .strip__arrow--left {
-    left: 24px;
-  }
+  /* Sits just inside the page gutter so the arrow appears at the
+   * leftmost card's edge, not floating outside it. */
+  left: var(--page-padding-x);
 }
 
 .strip__arrow--right {
-  right: 12px;
-}
-
-@media (min-width: 1024px) {
-  .strip__arrow--right {
-    right: 24px;
-  }
+  right: var(--page-padding-x);
 }
