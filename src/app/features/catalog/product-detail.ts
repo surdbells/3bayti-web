@@ -30,6 +30,7 @@ import {
   StackComponent,
 } from '../../shared/ui';
 import type { Money, ProductDetail } from './product.model';
+import { ProductCardComponent } from './product-card';
 
 /**
  * Product detail page (PDP) — `/product/:slug`.
@@ -47,7 +48,7 @@ import type { Money, ProductDetail } from './product.model';
  *   Build time stays under 5 minutes.
  *   See app.routes.server.ts for the cap.
  *
- * What's in W2.2a (this commit):
+ * What's in W2.2a:
  *   - Image gallery (primary + thumbnails)
  *   - Title, vendor, price (with sale strike-through)
  *   - Sizes + colors display
@@ -56,12 +57,14 @@ import type { Money, ProductDetail } from './product.model';
  *   - Visual breadcrumb (Home › Categories › {category} › {product})
  *   - Basic SEO meta (title, description, canonical, OG)
  *
- * Deferred to W2.2b:
- *   - schema.org Product JSON-LD (the big SEO win)
- *   - BreadcrumbList JSON-LD
- *   - Reviews section UI
- *   - Related products grid (data is fetched, just not rendered)
- *   - Aggregate rating display
+ * What's in W2.2b:
+ *   - Aggregate rating widget (5 stars + count, fractional support)
+ *   - Reviews section (per-review stars, verified buyer badge,
+ *     graceful date handling)
+ *   - schema.org Product JSON-LD (price, availability, brand,
+ *     aggregateRating, review[]) — eligible for Google rich results
+ *   - BreadcrumbList JSON-LD mirroring the visual breadcrumb
+ *   - Related products grid ("You may also like") — bottom of page
  */
 @Component({
   selector: 'app-product-detail',
@@ -71,6 +74,7 @@ import type { Money, ProductDetail } from './product.model';
     HeadingComponent,
     TextComponent,
     StackComponent,
+    ProductCardComponent,
   ],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './product-detail.html',

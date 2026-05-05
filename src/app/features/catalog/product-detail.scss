@@ -592,3 +592,28 @@
   font-weight: 500;
   color: var(--color-text-secondary);
 }
+
+/* ----- Related products grid ('You may also like') ------------------- */
+
+/* Lives below the 2-column pdp-grid. Reuses the same auto-fill
+   minmax pattern as /category/:slug so the visual rhythm matches.
+   Larger top margin separates it from the info column above. */
+
+.pdp-related {
+  margin-top: 80px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.pdp-related__grid {
+  display: grid;
+  gap: 32px 24px;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+}
+
+@media (min-width: 768px) {
+  .pdp-related__grid {
+    gap: 48px 32px;
+  }
+}
