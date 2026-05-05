@@ -168,6 +168,32 @@
             }
           </p>
 
+          <!--
+            Add-to-cart action.
+            In-stock products get the primary "Add to cart" button.
+            Out-of-stock products get a disabled "Sold out" button so
+            the affordance is visible but inert. Per Phase 2 direction,
+            clicking takes the user to /cart (no drawer).
+          -->
+          @if (p.in_stock) {
+            <button
+              type="button"
+              class="pdp-add-to-cart"
+              (click)="addToCart()"
+            >
+              Add to cart
+            </button>
+          } @else {
+            <button
+              type="button"
+              class="pdp-add-to-cart pdp-add-to-cart--sold-out"
+              disabled
+              aria-disabled="true"
+            >
+              Sold out
+            </button>
+          }
+
           <!-- Sizes -->
           @if (p.sizes && p.sizes.length > 0) {
             <fieldset class="pdp-options">

@@ -79,3 +79,61 @@
 .nav-link:focus-visible::after {
   transform: scaleX(1);
 }
+
+/* ----- Cart icon + badge ------------------------------------------ */
+
+/* Icon-style nav links: defeat the underline animation that text
+   nav-links use, since an underline under an icon looks like a
+   ribbon/tag rather than a hover hint. */
+.nav-link--icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 4px;
+  /* Override the text-link's expanding underline; icons don't need it. */
+}
+
+.nav-link--icon::after {
+  display: none;
+}
+
+.cart-icon {
+  width: 22px;
+  height: 22px;
+  display: block;
+  color: var(--color-text-primary);
+  transition: color 0.15s ease, transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.nav-link--icon:hover .cart-icon,
+.nav-link--icon:focus-visible .cart-icon {
+  color: var(--color-brand-700);
+  transform: translateY(-1px);
+}
+
+/* Reactive badge — only renders when count > 0 (template @if guard).
+ * Sits on the top-right corner of the icon. Brand-700 fill + cream
+ * text reads as a subtle marker rather than a notification dot. */
+.cart-badge {
+  position: absolute;
+  top: -2px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--color-brand-700);
+  color: var(--color-bg-surface);
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  /* A whisper of separation so the badge reads against any background
+   * (including a gold ornament that might appear behind the header
+   * in a future hero design). */
+  box-shadow: 0 0 0 2px var(--color-bg-surface);
+}

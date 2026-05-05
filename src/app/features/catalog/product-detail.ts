@@ -10,7 +10,7 @@ import {
   effect,
 } from '@angular/core';
 import { isPlatformServer } from '@angular/common';
-import { ActivatedRoute } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { catchError, map, of, switchMap, tap } from 'rxjs';
@@ -32,6 +32,8 @@ import {
 } from '../../shared/ui';
 import type { Money, ProductDetail } from './product.model';
 import { ProductCardComponent } from './product-card';
+import { CartService } from '../cart/cart.service';
+import { ToastService } from '../../shared/ui/toast.service';
 
 /**
  * Product detail page (PDP) — `/product/:slug`.
@@ -88,6 +90,9 @@ export class ProductDetailComponent {
   private seo = inject(SeoService);
   private state = inject(TransferState);
   private platformId = inject(PLATFORM_ID);
+  private cart = inject(CartService);
+  private toast = inject(ToastService);
+  private router = inject(Router);
 
   /**
    * Sets the SSR HTTP response status. Called when the API returns 404
@@ -406,6 +411,32 @@ export class ProductDetailComponent {
       event.preventDefault();
       this.selectImage(index);
     }
+  }
+
+  /**
+   * Add the current product to the cart, then navigate to /cart.
+   *
+   * The Phase 2 direction is "go to /cart" (not a drawer). The toast
+   * fires regardless — it gives the user a moment of confirmation
+   * before the navigation completes, and survives the route change
+   * because ToastService is rooted in app.config.ts.
+   *
+   * Out-of-stock guard: the template binds [disabled] on the button
+   * to !p.in_stock, so the click handler shouldn't fire when sold out.
+   * Defensive check here too in case the disabled attribute is ever
+   * stripped (browser extension, end-user devtools modification).
+   */
+  addToCart(): void {
+    const p = this.product();
+    if (!p) return;
+    if (!p.in_stock) {
+      /* Defense in depth — UI prevents this but a stripped disabled
+         attribute shouldn't poison the cart with an unfulfillable line. */
+      return;
+    }
+    this.cart.add(p, 1);
+    this.toast.success(`${p.name} added to cart`);
+    void this.router.navigateByUrl('/cart');
   }
 
   /** Format Money (AED 530.00 → "AED 530"). */

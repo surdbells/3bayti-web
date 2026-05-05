@@ -133,6 +133,26 @@ export const serverRoutes: ServerRoute[] = [
     },
   },
   {
+    /* Cart page — Phase 2.
+     *
+     * RenderMode.Client (CSR-only) because cart content is per-user
+     * localStorage state. There is nothing meaningful to prerender at
+     * build time, and SSR'ing "empty cart" would cause a flash of
+     * empty state on the browser when localStorage hydration adds
+     * the real items moments later.
+     *
+     * The static app shell (header + footer + page chrome) is still
+     * served by Cloudflare's ASSETS binding; only the cart's inner
+     * content waits for JS to render. Acceptable trade-off because
+     * cart isn't SEO-relevant and the user is logged into the brand
+     * surface either way.
+     *
+     * Must come BEFORE the '**' catch-all below — Angular's server
+     * router matches the first listed route that fits. */
+    path: 'cart',
+    renderMode: RenderMode.Client,
+  },
+  {
     /* Default: prerender everything else at build time. */
     path: '**',
     renderMode: RenderMode.Prerender,

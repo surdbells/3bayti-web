@@ -1,0 +1,196 @@
+<main class="cart-page">
+  <div class="cart-page__inner">
+
+    <!-- Page heading. Always rendered (even on empty cart) so the
+         user lands on a clear surface that says "this is your cart". -->
+    <header class="cart-page__header">
+      <p class="cart-page__eyebrow">Cart</p>
+      <h1 class="cart-page__title">Your cart</h1>
+      @if (!isEmpty()) {
+        <p class="cart-page__subtitle">
+          {{ count() }} {{ count() === 1 ? 'item' : 'items' }}
+        </p>
+      }
+    </header>
+
+    @if (isEmpty()) {
+
+      <!--
+        Empty state. Centred prompt with a friendly Cormorant lede and
+        a CTA back to /category. Keeps the editorial brand tone even
+        when there's no commerce content to render.
+      -->
+      <section class="cart-empty" aria-label="Empty cart">
+        <div class="cart-empty__ornament" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 7h12l-1.5 12.5a1 1 0 0 1-1 0.9h-7a1 1 0 0 1-1-0.9L6 7z" />
+            <path d="M9 7V5.5A3 3 0 0 1 12 2.5a3 3 0 0 1 3 3V7" />
+          </svg>
+        </div>
+        <h2 class="cart-empty__title">Your cart is empty</h2>
+        <p class="cart-empty__lede">
+          Discover handcrafted abayas, kaftans and modest wear from
+          designers across the UAE.
+        </p>
+        <a routerLink="/category" class="cart-empty__cta">
+          Browse categories
+        </a>
+      </section>
+
+    } @else {
+
+      <!--
+        Cart with items. Two-column on desktop (items left, summary
+        sticky right), stacked on mobile. The grid template inside
+        cart-page__layout is what handles the responsive split.
+      -->
+      <div class="cart-page__layout">
+
+        <!-- ============================================================
+             ITEMS LIST
+             ============================================================ -->
+        <section class="cart-items" aria-label="Cart items">
+          <ul class="cart-items__list" role="list">
+            @for (item of items(); track item.key) {
+              <li class="cart-line">
+
+                <!-- Thumbnail: link to PDP -->
+                <a [routerLink]="productUrl(item)" class="cart-line__thumb">
+                  @if (item.image_url) {
+                    <img
+                      [src]="item.image_url"
+                      [alt]="item.name"
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  } @else {
+                    <div class="cart-line__thumb-fallback" aria-hidden="true">
+                      <span>{{ item.name.charAt(0) }}</span>
+                    </div>
+                  }
+                </a>
+
+                <!-- Body: vendor, name, price, stepper, remove -->
+                <div class="cart-line__body">
+
+                  <!-- Vendor (clickable when slug present) -->
+                  @if (vendorUrl(item); as vUrl) {
+                    <a [routerLink]="vUrl" class="cart-line__vendor">
+                      {{ item.vendor_name }}
+                    </a>
+                  } @else {
+                    <span class="cart-line__vendor cart-line__vendor--static">
+                      {{ item.vendor_name }}
+                    </span>
+                  }
+
+                  <!-- Product name (links to PDP) -->
+                  <a [routerLink]="productUrl(item)" class="cart-line__name">
+                    {{ item.name }}
+                  </a>
+
+                  <!-- Unit price (small, secondary) -->
+                  <p class="cart-line__unit-price">
+                    {{ formatMoney(item.unit_price) }}
+                    <span class="cart-line__unit-price-each" aria-hidden="true">each</span>
+                  </p>
+
+                  <!-- Stepper + remove row (sits at the bottom of the body) -->
+                  <div class="cart-line__controls">
+                    <div
+                      class="cart-line__stepper"
+                      role="group"
+                      [attr.aria-label]="'Quantity for ' + item.name"
+                    >
+                      <button
+                        type="button"
+                        class="cart-line__step"
+                        (click)="decrementQty(item)"
+                        [disabled]="item.qty <= 1"
+                        aria-label="Decrease quantity"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M5 12h14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                      </button>
+                      <span
+                        class="cart-line__qty"
+                        aria-live="polite"
+                        [attr.aria-label]="'Quantity ' + item.qty"
+                      >
+                        {{ item.qty }}
+                      </span>
+                      <button
+                        type="button"
+                        class="cart-line__step"
+                        (click)="incrementQty(item)"
+                        [disabled]="item.qty >= 99"
+                        aria-label="Increase quantity"
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <path d="M5 12h14M12 5v14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="cart-line__remove"
+                      (click)="removeItem(item)"
+                      [attr.aria-label]="'Remove ' + item.name + ' from cart'"
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Right-aligned line subtotal. Sits at the top so
+                     the user's eye lands on it after seeing the
+                     thumbnail + name. -->
+                <p class="cart-line__line-total">
+                  {{ formatMoney(lineSubtotal(item)) }}
+                </p>
+              </li>
+            }
+          </ul>
+        </section>
+
+        <!-- ============================================================
+             ORDER SUMMARY (right column on desktop, sticky)
+             ============================================================ -->
+        <aside class="cart-summary" aria-label="Order summary">
+          <h2 class="cart-summary__title">Order summary</h2>
+
+          <dl class="cart-summary__lines">
+            <div class="cart-summary__row">
+              <dt>Subtotal</dt>
+              <dd>{{ formatMoney(subtotal()) }}</dd>
+            </div>
+            <!-- Per Phase 2 direction: no shipping placeholder — the
+                 total equals the subtotal. Real shipping calculation
+                 lives in Phase 3 once the checkout flow exists and we
+                 know the user's delivery address. -->
+            <div class="cart-summary__row cart-summary__row--total">
+              <dt>Total</dt>
+              <dd>{{ formatMoney(subtotal()) }}</dd>
+            </div>
+          </dl>
+
+          <!-- Primary CTA. Points at /checkout which doesn't exist yet
+               (Phase 3 deliverable). The W2.2c safety net renders a
+               friendly 404 if a user clicks this before Phase 3 ships. -->
+          <a routerLink="/checkout" class="cart-summary__cta">
+            Proceed to checkout
+          </a>
+
+          <p class="cart-summary__note">
+            Shipping calculated at checkout.
+          </p>
+        </aside>
+
+      </div>
+
+    }
+
+  </div>
+</main>

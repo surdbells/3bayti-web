@@ -59,6 +59,18 @@ export const routes: Routes = [
     title: 'Product · 3bayti',
   },
   {
+    /* Cart — `/cart`. Phase 2 surface, local-first (the cart lives
+       in localStorage, not on the server). Configured as
+       RenderMode.Client in app.routes.server.ts because there's
+       nothing meaningful to prerender — cart content is per-user
+       browser state. The page shell (header + footer) still SSRs,
+       and the cart content hydrates on the browser. */
+    path: 'cart',
+    loadComponent: () =>
+      import('./features/cart/cart-page').then(m => m.CartPageComponent),
+    title: 'Your Cart · 3bayti',
+  },
+  {
     /* Dev-only component preview. noindex'd via SeoService inside the
        component. Lazy-loaded so it doesn't bloat the production bundle
        for normal users. */

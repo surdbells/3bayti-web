@@ -5,7 +5,43 @@
     </a>
     <nav aria-label="Primary" class="primary-nav">
       <a routerLink="/category" class="nav-link">Categories</a>
-      <!-- Phase 2 will add Designers, About, Search, Account, Cart. -->
+      <!-- Phase 3 will add Designers, About, Search, Account. -->
+
+      <!--
+        Cart link with reactive count badge.
+        - Always present (the link itself is the click target for /cart)
+        - Badge only renders when count > 0; otherwise it'd be a noisy
+          "0" floating next to the icon every page load
+        - Live signal binding via count() — Angular's signal-aware change
+          detection updates only this badge when the cart changes
+      -->
+      <a
+        routerLink="/cart"
+        class="nav-link nav-link--icon"
+        [attr.aria-label]="count() > 0
+          ? 'Cart, ' + count() + ' ' + (count() === 1 ? 'item' : 'items')
+          : 'Cart, empty'"
+      >
+        <svg
+          class="cart-icon"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="1.5"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <!-- Simple shopping bag glyph: handles + body. The Cormorant
+               serif page benefits from a clean line icon rather than a
+               filled-shape "shopping cart" which would feel utilitarian. -->
+          <path d="M6 7h12l-1.5 12.5a1 1 0 0 1-1 0.9h-7a1 1 0 0 1-1-0.9L6 7z" />
+          <path d="M9 7V5.5A3 3 0 0 1 12 2.5a3 3 0 0 1 3 3V7" />
+        </svg>
+        @if (count() > 0) {
+          <span class="cart-badge" aria-hidden="true">{{ count() }}</span>
+        }
+      </a>
     </nav>
   </div>
 </header>

@@ -274,6 +274,73 @@
   box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.15);
 }
 
+/* ----- Add-to-cart button ------------------------------------------- */
+
+/* The primary call-to-action on the PDP. Sits between stock state and
+ * the size/color chips so it reads as the natural next step after the
+ * user confirms the product is in stock.
+ *
+ * Visual direction: solid brand-700 fill, Inter caps with letter-
+ * spacing — matches the editorial-luxury language of the rest of the
+ * page (Cormorant + Playfair on the descriptive copy, Inter on the
+ * functional UI).
+ *
+ * Sticks at full width so the eye returns here naturally on every
+ * scroll. We don't need an icon — the text "Add to cart" is universal
+ * and the button is large enough to read at a glance.
+ */
+.pdp-add-to-cart {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 16px 24px;
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-bg-surface);
+  background: var(--color-brand-700);
+  border: 1px solid var(--color-brand-700);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pdp-add-to-cart:hover {
+  background: var(--color-brand-500);
+  border-color: var(--color-brand-500);
+  transform: translateY(-1px);
+}
+
+.pdp-add-to-cart:focus-visible {
+  outline: 2px solid var(--color-brand-500);
+  outline-offset: 3px;
+}
+
+.pdp-add-to-cart:active {
+  transform: translateY(0);
+}
+
+/* Sold-out variant — same shape, dimmed surface, no hover lift, no
+ * pointer affordance. Conveys "this exists but isn't available now"
+ * rather than hiding the affordance entirely (hidden actions confuse
+ * users who don't realise the product just sold out). */
+.pdp-add-to-cart--sold-out,
+.pdp-add-to-cart--sold-out:hover,
+.pdp-add-to-cart--sold-out:focus-visible {
+  background: var(--color-brand-100);
+  color: var(--color-text-tertiary);
+  border-color: var(--color-brand-200);
+  cursor: not-allowed;
+  transform: none;
+  outline: none;
+}
+
 /* ----- Options (sizes, colors) --------------------------------------- */
 
 .pdp-options {
