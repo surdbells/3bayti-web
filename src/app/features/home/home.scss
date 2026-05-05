@@ -1,106 +1,423 @@
-/* Home page — Phase 1 hero + value props.
-   Fully responsive, SSR-friendly (no JS-dependent layout). */
+/* Home page styles — Phase 1 Week 2
+ * ===================================
+ * Hero typography refreshed (Cormorant eyebrow + Playfair display +
+ * Inter body); categories grid restyled with the cream / Pronounced
+ * shadow language to match ProductCard; section spacing chosen so
+ * the page reads as a flowing edit, not a stamped-out list of grids.
+ *
+ * Layout philosophy:
+ *   - Hero is centred, full-bleed canvas, generous vertical space
+ *   - Section gaps grow with screen size (more whitespace on desktop)
+ *   - Strips bleed off the right edge on mobile (peek invites swipe);
+ *     centred within max-width container on desktop
+ */
 
 .home-page {
-  display: block;
-}
-
-/* ----- Hero --------------------------------------------------------------- */
-
-.hero {
-  min-height: 60vh;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 80px 24px;
-  /* Subtle warm gradient that evokes the brand's beige + gold palette.
-     Replaced in Phase 2 with editorial photography. */
-  background:
-    radial-gradient(ellipse at top, rgba(177, 143, 31, 0.08), transparent 60%),
-    linear-gradient(180deg, var(--color-bg-canvas) 0%, var(--color-brand-50) 100%);
-}
-
-.hero-inner {
-  max-width: 720px;
-  text-align: center;
-}
-
-.eyebrow {
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  color: var(--color-brand-500);
-  margin: 0 0 16px;
-}
-
-.hero-title {
-  font-size: clamp(32px, 5vw, 56px);
-  line-height: 1.15;
-  font-weight: 700;
-  color: var(--color-brand-700);
-  margin: 0 0 24px;
-}
-
-.hero-lede {
-  font-size: clamp(16px, 1.5vw, 18px);
-  line-height: 1.6;
-  color: var(--color-text-secondary);
-  margin: 0 0 16px;
-}
-
-.hero-app-cta {
-  font-size: 14px;
-  color: var(--color-text-tertiary);
-  margin: 24px 0 0;
-}
-
-/* ----- Value grid --------------------------------------------------------- */
-
-.value-grid {
-  background: var(--color-bg-surface);
-  padding: 80px 24px;
-}
-
-.value-grid .container {
-  max-width: 1280px;
-  margin-inline: auto;
-}
-
-.section-title {
-  font-size: clamp(24px, 3vw, 36px);
-  text-align: center;
-  color: var(--color-brand-700);
-  margin: 0 0 48px;
-}
-
-.grid {
-  display: grid;
-  gap: 32px;
-  grid-template-columns: 1fr;
+  flex-direction: column;
+  /* Section gap — large but not absurd. Each section's own internal
+   * top/bottom padding adds to this for balanced rhythm. */
+  gap: 64px;
+  padding-bottom: 0; /* Footer mounts directly below; no padding here. */
 }
 
 @media (min-width: 768px) {
-  .grid {
-    grid-template-columns: repeat(3, 1fr);
+  .home-page {
+    gap: 88px;
   }
 }
 
-.value-card {
+@media (min-width: 1024px) {
+  .home-page {
+    gap: 112px;
+  }
+}
+
+/* =====================================================================
+   HERO BAND
+   ===================================================================== */
+
+.hero {
+  /* Hero sits on the brand canvas with no card chrome. The whole page
+   * canvas is brand bg-canvas; hero just commands the visual centre. */
+  padding: 80px 24px 24px;
   text-align: center;
-  padding: 24px;
 }
 
-.value-card h3 {
-  font-size: 22px;
-  font-weight: 600;
+@media (min-width: 768px) {
+  .hero {
+    padding: 120px 48px 48px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero {
+    padding: 160px 48px 64px;
+  }
+}
+
+.hero__inner {
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+}
+
+.hero__eyebrow {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--color-brand-500);
+  margin: 0;
+}
+
+.hero__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: 36px;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
   color: var(--color-brand-700);
-  margin: 0 0 12px;
+  margin: 0;
+  /* Slight italic accent on the em-dash phrase via CSS &mdash; we keep
+   * the whole title roman but rely on the em-dash for visual rhythm. */
 }
 
-.value-card p {
-  font-size: 15px;
-  line-height: 1.6;
+@media (min-width: 640px) {
+  .hero__title {
+    font-size: 48px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero__title {
+    font-size: 64px;
+    line-height: 1.05;
+  }
+}
+
+.hero__lede {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.5;
   color: var(--color-text-secondary);
   margin: 0;
+  max-width: 580px;
+}
+
+@media (min-width: 1024px) {
+  .hero__lede {
+    font-size: 22px;
+  }
+}
+
+.hero__app-cta {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+  margin-top: 8px;
+}
+
+/* Gold ornament — small visual punctuation under the hero. Same
+ * dot-flanked-by-lines motif as ProductCard's divider, but wider. */
+.hero__ornament {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  width: 80px;
+}
+
+.hero__ornament-line {
+  flex: 1;
+  height: 1px;
+  background: var(--color-brand-300);
+  opacity: 0.6;
+}
+
+.hero__ornament-mark {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--color-brand-400);
+}
+
+/* =====================================================================
+   GENERIC HOME-SECTION HEADER (shared by Categories + Designer Spotlight)
+   ProductStrip has its own header pattern — these two surfaces use a
+   slightly different shape because they're not horizontally scrolling.
+   ===================================================================== */
+
+.home-section {
+  padding: 0 24px;
+}
+
+@media (min-width: 1024px) {
+  .home-section {
+    padding: 0 48px;
+  }
+}
+
+.home-section__header {
+  max-width: 1280px;
+  margin: 0 auto 32px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+@media (min-width: 1024px) {
+  .home-section__header {
+    margin-bottom: 40px;
+  }
+}
+
+.home-section__eyebrow {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--color-brand-500);
+  margin: 0 0 8px;
+  flex-basis: 100%;
+}
+
+.home-section__title {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: 28px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-brand-700);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .home-section__title {
+    font-size: 32px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .home-section__title {
+    font-size: 36px;
+  }
+}
+
+.home-section__view-all {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-brand-700);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  transition: color 0.2s ease, gap 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.home-section__view-all:hover,
+.home-section__view-all:focus-visible {
+  color: var(--color-brand-500);
+  gap: 10px;
+  outline: none;
+}
+
+.home-section__view-all svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* =====================================================================
+   CATEGORIES GRID
+   ===================================================================== */
+
+.categories-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (min-width: 640px) {
+  .categories-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .categories-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+  }
+}
+
+/* Category tile — matches ProductCard's surface language but simpler
+ * (square aspect, just an avatar + name + count). */
+.category-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background: #fdfaf3;
+  border-radius: 20px;
+  padding: 20px;
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  /* Same Pronounced shadow language as ProductCard. */
+  box-shadow:
+    0 4px 8px rgba(90, 58, 44, 0.08),
+    0 24px 48px -12px rgba(90, 58, 44, 0.16),
+    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+  transition:
+    box-shadow 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.category-tile:hover,
+.category-tile:focus-visible {
+  transform: translateY(-4px);
+  box-shadow:
+    0 8px 16px rgba(90, 58, 44, 0.10),
+    0 40px 72px -16px rgba(90, 58, 44, 0.22),
+    0 16px 28px -8px rgba(90, 58, 44, 0.14);
+  outline: none;
+}
+
+.category-tile:focus-visible {
+  box-shadow:
+    0 8px 16px rgba(90, 58, 44, 0.10),
+    0 40px 72px -16px rgba(90, 58, 44, 0.22),
+    0 16px 28px -8px rgba(90, 58, 44, 0.14),
+    0 0 0 2px var(--color-brand-500);
+}
+
+.category-tile__thumb {
+  aspect-ratio: 1 / 1;
+  border-radius: 14px;
+  background: var(--color-brand-100);
+  display: grid;
+  place-items: center;
+  color: var(--color-brand-700);
+  /* Subtle inner ornament — large initial in Playfair, like a custom
+   * monogram. Brand-coded fallback for the eventual category cover
+   * imagery. */
+}
+
+.category-tile__thumb span {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-style: italic;
+  font-weight: 500;
+  font-size: 56px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  /* Slight optical adjustment for italic glyphs — they ride a touch high. */
+  margin-top: -6px;
+}
+
+@media (min-width: 768px) {
+  .category-tile__thumb span {
+    font-size: 72px;
+  }
+}
+
+.category-tile__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.category-tile__name {
+  font-family: 'Playfair Display', Georgia, serif;
+  font-weight: 500;
+  font-size: 18px;
+  line-height: 1.2;
+  color: var(--color-brand-700);
+  margin: 0;
+}
+
+@media (min-width: 768px) {
+  .category-tile__name {
+    font-size: 20px;
+  }
+}
+
+.category-tile__count {
+  font-family: 'Inter', system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--color-text-tertiary);
+  margin: 0;
+  letter-spacing: 0.02em;
+}
+
+/* Category skeleton — used during the rare CSR-only cache miss. */
+.category-tile--skeleton {
+  pointer-events: none;
+  /* Same outer dimensions, no inner content (the SkeletonShimmer fills it). */
+}
+
+/* =====================================================================
+   DESIGNER SPOTLIGHT GRID
+   4 designer cards in a row on desktop, 2x2 on tablet, stacked on mobile.
+   The cards themselves are styled in designer-card.scss.
+   ===================================================================== */
+
+.designers-grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: grid;
+  gap: 24px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 640px) {
+  .designers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1280px) {
+  .designers-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 28px;
+  }
+}
+
+/* Designer skeleton — matches DesignerCard's outer dimensions so the
+ * layout doesn't shift when real content swaps in. */
+.designer-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: #fdfaf3;
+  border-radius: 20px;
+  padding: 20px 20px 24px;
+  min-height: 420px;
+  box-shadow:
+    0 4px 8px rgba(90, 58, 44, 0.08),
+    0 24px 48px -12px rgba(90, 58, 44, 0.16),
+    0 8px 16px -4px rgba(90, 58, 44, 0.10);
+}
+
+.designer-skeleton ui-skeleton-shimmer {
+  display: block;
+}
+
+.designer-skeleton ui-skeleton-shimmer:last-child {
+  margin-top: auto;
 }
