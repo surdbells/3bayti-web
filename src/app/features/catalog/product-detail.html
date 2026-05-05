@@ -19,14 +19,18 @@
       </header>
     } @else if (product(); as p) {
 
-      <!-- Breadcrumb (visual). JSON-LD version comes in W2.2b. -->
+      <!-- Breadcrumb (visual). The same trail is also emitted as
+           BreadcrumbList JSON-LD via SeoService — they MUST stay in
+           lockstep (Google's rich-results guidelines reject
+           structured data that doesn't match visible content). The
+           shared `categoryLabel()` helper enforces that. -->
       <nav class="pdp-breadcrumb" aria-label="Breadcrumb">
         <a href="/" class="crumb-link">Home</a>
         <span class="crumb-sep" aria-hidden="true">›</span>
         <a href="/category" class="crumb-link">Categories</a>
         @if (categoryUrl(); as catUrl) {
           <span class="crumb-sep" aria-hidden="true">›</span>
-          <a [href]="catUrl" class="crumb-link">{{ p.category_slug }}</a>
+          <a [href]="catUrl" class="crumb-link">{{ categoryLabel() }}</a>
         }
         <span class="crumb-sep" aria-hidden="true">›</span>
         <span class="crumb-current" aria-current="page">{{ p.name }}</span>

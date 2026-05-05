@@ -17,6 +17,11 @@ import { catchError, map, of, switchMap, tap } from 'rxjs';
 
 import { SeoService } from '../../core/seo/seo.service';
 import { ApiConfigService } from '../../core/api/api-config.service';
+import {
+  productSchema,
+  breadcrumbSchema,
+  type ProductSchemaOpts,
+} from '../../core/seo/schema.helpers';
 import { environment } from '../../../environments/environment';
 import {
   ContainerComponent,
@@ -227,8 +232,97 @@ export class ProductDetailComponent {
         image: p.primary_image?.url ?? p.images?.[0]?.url,
       });
 
-      /* JSON-LD schema.org Product is deferred to W2.2b — that's the
-         major SEO payoff and warrants its own focused commit. */
+      /* ----- JSON-LD structured data --------------------------------
+       *
+       * Two schema.org graphs:
+       *   1. Product — primary SEO win. Eligible for Google's product
+       *      rich results (price, availability, star rating in SERPs).
+       *   2. BreadcrumbList — eligible for the breadcrumb trail above
+       *      the result snippet. Mirrors the visual breadcrumb in
+       *      the template.
+       *
+       * Both go through SeoService.setStructuredData() which handles
+       * the @context boilerplate and dedupes prior <script type=
+       * "application/ld+json"> tags between navigations.
+       */
+
+      /* Build the image list. Schema.org accepts string or string[];
+       * we pass an array when there's more than one image for richer
+       * results, otherwise a single string. Use absolute URLs (the
+       * API already returns CDN-absolute URLs so no concat needed). */
+      const imageUrls = (p.images?.length ? p.images : [p.primary_image])
+        .filter((i): i is NonNullable<typeof i> => !!i?.url)
+        .map((i) => i.url);
+      const image = imageUrls.length > 1 ? imageUrls : imageUrls[0] || '';
+
+      /* Description for schema is the FULL plain-text description
+       * (joined paragraphs), not the meta-description summary. Google
+       * uses Product.description for the rich-result preview, where
+       * more context is helpful. Falls back to the meta summary if
+       * the product has no description. */
+      const schemaDescription =
+        this.descriptionParagraphs().join(' ').trim() || summary || fallback;
+
+      /* Price for the Offer: the price the user actually pays. When
+       * on sale, that's sale_price; otherwise it's price. Currency is
+       * always taken from the same Money object to stay consistent. */
+      const offerMoney = this.isOnSale() && p.sale_price ? p.sale_price : p.price;
+
+      const schemaOpts: ProductSchemaOpts = {
+        name: p.name,
+        description: schemaDescription,
+        url,
+        image,
+        price: offerMoney.amount,
+        priceCurrency: offerMoney.currency,
+        inStock: p.in_stock,
+      };
+      if (p.sku) schemaOpts.sku = p.sku;
+      if (p.vendor?.name) schemaOpts.brand = p.vendor.name;
+
+      /* aggregateRating shares its source (this.aggregateRating()) with
+       * the visual rating block in the template. This is intentional:
+       * Google's rich-results guidelines reject structured-data ratings
+       * that aren't visible on the page. Single source = no drift. */
+      const agg = this.aggregateRating();
+      if (agg) schemaOpts.rating = agg;
+
+      /* Map recent_reviews to the schema's review shape. Only fields
+       * present in the API are forwarded; the helper drops empty
+       * optional fields (title, body, date) so the resulting JSON is
+       * minimal. */
+      if (p.recent_reviews?.length) {
+        schemaOpts.reviews = p.recent_reviews.map((r) => ({
+          author: r.author,
+          rating: r.rating,
+          ...(r.body ? { body: r.body } : {}),
+          ...(r.title ? { title: r.title } : {}),
+          ...(r.created_at ? { date: r.created_at } : {}),
+        }));
+      }
+
+      /* Breadcrumb mirrors the visual trail (Home › Categories ›
+       * {category} › {product}). Skip the category step when
+       * category_slug isn't known — never emit broken URLs in
+       * structured data. The visual breadcrumb in the template uses
+       * the same categoryLabel() helper, so the two stay in sync. */
+      const crumbs = [
+        { name: 'Home', url: `${siteUrl}/` },
+        { name: 'Categories', url: `${siteUrl}/category` },
+      ];
+      const catLabel = this.categoryLabel();
+      if (p.category_slug && catLabel) {
+        crumbs.push({
+          name: catLabel,
+          url: `${siteUrl}/category/${p.category_slug}`,
+        });
+      }
+      crumbs.push({ name: p.name, url });
+
+      this.seo.setStructuredData([
+        productSchema(schemaOpts),
+        breadcrumbSchema(crumbs),
+      ]);
     });
   }
 
@@ -348,6 +442,35 @@ export class ProductDetailComponent {
   categoryUrl(): string | null {
     const slug = this.product()?.category_slug;
     return slug ? `/category/${slug}` : null;
+  }
+
+  /**
+   * Human-readable label for the category, derived from the slug when
+   * the API doesn't return a friendlier name in the product payload.
+   *
+   * The catalogue's category slugs follow a 'name-id' convention
+   * (e.g. 'abayas-1', 'mukhawars-2', 'kaftans-3'). We strip the
+   * trailing numeric suffix, then capitalize. Hyphens within the
+   * remaining name (rare but possible) are replaced with spaces.
+   *
+   * Used by both the visual breadcrumb and the BreadcrumbList JSON-LD
+   * so the two stay in lockstep — Google rejects structured data
+   * that doesn't match what's visible on the page.
+   *
+   * Returns null when there's no category_slug.
+   */
+  categoryLabel(): string | null {
+    const slug = this.product()?.category_slug;
+    if (!slug) return null;
+    /* Strip a trailing '-<digits>' (e.g. 'abayas-1' → 'abayas'),
+     * but ONLY if the number is at the very end. Slugs without a
+     * numeric suffix pass through unchanged. */
+    const withoutSuffix = slug.replace(/-\d+$/, '');
+    /* Replace any remaining hyphens with spaces and capitalize. */
+    return withoutSuffix
+      .split('-')
+      .map((word) => (word ? word[0].toUpperCase() + word.slice(1) : ''))
+      .join(' ');
   }
 
   /** URL for the vendor breadcrumb link. */
