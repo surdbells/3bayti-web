@@ -18,6 +18,7 @@ import { catchError, map, of, switchMap, tap } from 'rxjs';
 import { SeoService } from '../../core/seo/seo.service';
 import { breadcrumbSchema, itemListSchema } from '../../core/seo/schema.helpers';
 import { ApiConfigService } from '../../core/api/api-config.service';
+import { createSetSsrStatus } from '../../core/ssr/response-status';
 import { environment } from '../../../environments/environment';
 import {
   ContainerComponent,
@@ -83,6 +84,14 @@ export class CategoryDetailComponent {
   private seo = inject(SeoService);
   private state = inject(TransferState);
   private platformId = inject(PLATFORM_ID);
+
+  /**
+   * Sets the SSR HTTP response status. Called when the API returns 404
+   * for the category slug — without this the response would be HTTP 200
+   * with a "not found" page, which crawlers index as real content.
+   * No-op on the browser. (W2.2c)
+   */
+  private setSsrStatus = createSetSsrStatus();
 
   /** Current slug from the route. Drives the API call. */
   readonly slug = toSignal(
@@ -228,6 +237,9 @@ export class CategoryDetailComponent {
         /* 404 from API → set notFound flag, return null so loading clears. */
         if (err.status === 404) {
           this.notFound.set(true);
+          /* W2.2c: propagate 404 to the HTTP response so crawlers see
+           * a real 404 instead of indexing this slug as a 200 page. */
+          this.setSsrStatus(404);
         } else {
           console.error(`[/category/${slug}] fetch failed:`, err.status);
         }
