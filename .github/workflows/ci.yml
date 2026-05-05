@@ -302,7 +302,11 @@ jobs:
         #
         #   Tests (run against each target):
         #     1. /              → must be served by ASSETS (prerendered home).
-        #                         Expectation: 200, contains "Premium abayas".
+        #                         Expectation: 200, contains the global footer
+        #                         marker (site-footer__brand-name) AND at least
+        #                         one carousel slide marker (proves the home
+        #                         page's primary content rendered, not just an
+        #                         empty <app-root>).
         #     2. /product/la26-2637 → top-200 prerendered PDP, ASSETS.
         #                         Expectation: 200, contains "Laduna".
         #     3. /product/{long-tail-slug} → NOT prerendered, runtime SSR.
@@ -336,18 +340,27 @@ jobs:
 
             echo ""
             echo "[$LABEL] Test 1: Prerendered home (served by ASSETS)"
-            local HOME_BODY HOME_STATUS
+            local HOME_BODY HOME_STATUS HOME_SLIDES
             HOME_BODY=$(curl -fsS --max-time 30 "$BASE/")
             HOME_STATUS=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 "$BASE/")
             if [ "$HOME_STATUS" != "200" ]; then
               echo "ERROR [$LABEL]: / returned $HOME_STATUS"
               exit 1
             fi
-            if ! echo "$HOME_BODY" | grep -q "Premium abayas"; then
-              echo "ERROR [$LABEL]: home page does not contain 'Premium abayas'"
+            # Stable BEM marker — the global footer renders on every
+            # page, so its absence means the app shell didn't render.
+            if ! echo "$HOME_BODY" | grep -q "site-footer__brand-name"; then
+              echo "ERROR [$LABEL]: home page missing footer marker — global app shell may not have rendered"
               exit 1
             fi
-            echo "✓ [$LABEL] home: 200 OK, content present"
+            # Carousel slide markers — proves the home page's primary
+            # content rendered with real product data, not skeleton.
+            HOME_SLIDES=$(echo "$HOME_BODY" | grep -oE 'hero-carousel__slide\b' | wc -l)
+            if [ "$HOME_SLIDES" -lt 1 ]; then
+              echo "ERROR [$LABEL]: home page rendered 0 carousel slides — /v2/products may have been unreachable"
+              exit 1
+            fi
+            echo "✓ [$LABEL] home: 200 OK, $HOME_SLIDES carousel slide markers, footer present"
 
             echo ""
             echo "[$LABEL] Test 2: Prerendered top-200 PDP (served by ASSETS)"
